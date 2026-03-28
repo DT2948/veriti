@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+python-multipart
+pillow
+imagehash
+numpy
+google-generativeai
+python-dotenv
+aiofiles
