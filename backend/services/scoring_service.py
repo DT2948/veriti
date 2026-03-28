@@ -5,12 +5,16 @@ from models.incident import Incident
 from models.submission import Submission
 
 
-def compute_confidence_tier(score: float) -> str:
-    if score >= 0.9:
+def compute_confidence_tier(
+    score: float,
+    number_of_reports: int,
+    official_overlap: bool = False,
+) -> str:
+    if official_overlap:
         return "official"
-    if score >= 0.6:
+    if number_of_reports >= 3 or score >= 0.6:
         return "corroborated"
-    if score >= 0.3:
+    if number_of_reports >= 2 or score >= 0.3:
         return "plausible"
     return "unverified"
 
@@ -36,7 +40,7 @@ def score_incident(db: Session, incident: Incident) -> tuple[str, float, str]:
         base_score = 0.9
         rationale = "Official source overlap detected."
     elif independent_report_count >= 3:
-        base_score = 0.6
+        base_score = 0.65
         rationale = f"{independent_report_count} independent reports corroborate the event."
     elif independent_report_count == 2:
         base_score = 0.35
@@ -48,7 +52,11 @@ def score_incident(db: Session, incident: Incident) -> tuple[str, float, str]:
     trust_adjustment = (avg_device_score - 0.5) * 0.2
     raw_score = base_score + trust_adjustment + media_bonus + detail_bonus
     score = max(0.1, min(1.0, round(raw_score, 3)))
-    tier = "official" if incident.official_overlap else compute_confidence_tier(score)
+    tier = compute_confidence_tier(
+        score=score,
+        number_of_reports=independent_report_count,
+        official_overlap=incident.official_overlap or any(s.source_type == "official" for s in submissions),
+    )
 
     incident.confidence_score = score if tier != "official" else max(score, 0.9)
     incident.confidence_tier = tier
