@@ -15,33 +15,41 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.outlined.PhotoCamera
-import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,13 +60,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.veriti.app.model.PipelineState
 import com.veriti.app.model.PipelineStepState
@@ -69,6 +80,17 @@ import com.veriti.app.network.UploadResult
 import com.veriti.app.pipeline.LocalPipeline
 import com.veriti.app.pipeline.LocalProcessingResult
 import com.veriti.app.pipeline.TextSanitizer
+import com.veriti.app.ui.theme.VeritiBackground
+import com.veriti.app.ui.theme.VeritiBlue
+import com.veriti.app.ui.theme.VeritiBluePressed
+import com.veriti.app.ui.theme.VeritiBorder
+import com.veriti.app.ui.theme.VeritiDanger
+import com.veriti.app.ui.theme.VeritiSuccess
+import com.veriti.app.ui.theme.VeritiSurface
+import com.veriti.app.ui.theme.VeritiSurfaceElevated
+import com.veriti.app.ui.theme.VeritiTextMuted
+import com.veriti.app.ui.theme.VeritiTextPrimary
+import com.veriti.app.ui.theme.VeritiTextSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
@@ -103,7 +125,7 @@ private data class PermissionPrompt(
     val action: MediaAction,
 )
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReportScreen() {
     val context = LocalContext.current
@@ -213,11 +235,25 @@ fun ReportScreen() {
     if (showDuplicateDialog) {
         AlertDialog(
             onDismissRequest = { showDuplicateDialog = false },
-            title = { Text("Duplicate Submission Blocked") },
-            text = { Text("You already submitted this image during this session.") },
+            containerColor = VeritiSurface,
+            titleContentColor = VeritiTextPrimary,
+            textContentColor = VeritiTextSecondary,
+            title = {
+                Text(
+                    "Duplicate Submission Blocked",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    "You already submitted this image during this session.",
+                    fontSize = 13.sp,
+                )
+            },
             confirmButton = {
                 TextButton(onClick = { showDuplicateDialog = false }) {
-                    Text("OK")
+                    Text("OK", color = VeritiBlue)
                 }
             },
         )
@@ -226,9 +262,21 @@ fun ReportScreen() {
     if (showFailureDialog) {
         AlertDialog(
             onDismissRequest = { showFailureDialog = false },
-            title = { Text("Submission Failed") },
+            containerColor = VeritiSurface,
+            titleContentColor = VeritiTextPrimary,
+            textContentColor = VeritiTextSecondary,
+            title = {
+                Text(
+                    "Submission Failed",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
             text = {
-                Text("Could not reach the server. Please check your connection and try again.")
+                Text(
+                    "Could not reach the server. Please check your connection and try again.",
+                    fontSize = 13.sp,
+                )
             },
             confirmButton = {
                 TextButton(
@@ -270,12 +318,12 @@ fun ReportScreen() {
                         }
                     }
                 ) {
-                    Text("Retry")
+                    Text("Retry", color = VeritiBlue)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showFailureDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = VeritiTextMuted)
                 }
             },
         )
@@ -305,130 +353,72 @@ fun ReportScreen() {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Veriti") },
-                navigationIcon = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(VeritiBackground)
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Outlined.Shield,
                         contentDescription = null,
-                        modifier = Modifier.padding(start = 16.dp),
+                        tint = VeritiTextPrimary,
+                        modifier = Modifier.size(18.dp),
                     )
-                },
-            )
+                    Text(
+                        text = "VERITI",
+                        color = VeritiTextPrimary,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(VeritiSuccess),
+                    )
+                    Text(
+                        text = "SECURE",
+                        color = VeritiTextMuted,
+                        fontSize = 12.sp,
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
+                }
+            }
         },
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
+        containerColor = VeritiBackground,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        bottomBar = {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .fillMaxWidth()
+                    .background(VeritiBackground)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .navigationBarsPadding(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Text(
-                            text = "Report Incident",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
+                if (isUploading) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LinearProgressIndicator(
+                            progress = { uploadProgress },
+                            modifier = Modifier.fillMaxWidth(),
+                            color = VeritiBlue,
+                            trackColor = VeritiBorder,
                         )
                         Text(
-                            text = "Capture or select evidence. Veriti sanitizes media locally before anything leaves your device.",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Uploading sanitized report... ${(uploadProgress * 100).toInt()}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = VeritiTextMuted,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Button(
-                                onClick = {
-                                    permissionPrompt = PermissionPrompt(
-                                        title = "Camera access",
-                                        message = "To capture incident evidence and determine your approximate area only.",
-                                        permissions = cameraPermissions(),
-                                        action = MediaAction.Camera,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.PhotoCamera,
-                                    contentDescription = null,
-                                )
-                                Text(
-                                    text = "Take Photo",
-                                    modifier = Modifier.padding(start = 8.dp),
-                                )
-                            }
-                            Button(
-                                onClick = {
-                                    permissionPrompt = PermissionPrompt(
-                                        title = "Gallery access",
-                                        message = "To choose incident evidence from your library and determine your approximate area only.",
-                                        permissions = galleryPermissions(),
-                                        action = MediaAction.Gallery,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Outlined.VideoLibrary,
-                                    contentDescription = null,
-                                )
-                                Text(
-                                    text = "Choose from Gallery",
-                                    modifier = Modifier.padding(start = 8.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                previewBitmap?.let { bitmap ->
-                    Card(shape = RoundedCornerShape(20.dp)) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Selected media preview",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp),
-                        )
-                    }
-                }
-
-                PrivacyStatusCard(state = pipelineState)
-
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it.take(500) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("What did you observe? (optional)") },
-                    placeholder = { Text("Keep it factual. Personal details will be removed locally.") },
-                    minLines = 3,
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Incident type",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        incidentTypes.forEach { type ->
-                            FilterChip(
-                                selected = selectedIncidentType == type,
-                                onClick = { selectedIncidentType = type },
-                                label = { Text(type.label) },
-                            )
-                        }
                     }
                 }
 
@@ -490,26 +480,236 @@ fun ReportScreen() {
                         processedMedia != null &&
                         !isUploading &&
                         cooldownRemaining == 0,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VeritiBlue,
+                        contentColor = Color.White,
+                        disabledContainerColor = VeritiBorder,
+                        disabledContentColor = VeritiTextMuted,
+                    ),
                 ) {
-                    Icon(imageVector = Icons.Outlined.Security, contentDescription = null)
-                    Text(
-                        text = if (cooldownRemaining > 0) {
-                            "Submit again in ${cooldownRemaining}s..."
-                        } else {
-                            "Submit Report Anonymously"
-                        },
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
+                    if (isUploading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Text(
+                            text = if (cooldownRemaining > 0) {
+                                "Submit again in ${cooldownRemaining}s..."
+                            } else {
+                                "Submit Anonymous Report"
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        },
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Transparent,
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text(
+                            text = "CAPTURE EVIDENCE",
+                            fontSize = 13.sp,
+                            color = VeritiTextMuted,
+                            letterSpacing = 1.5.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        Text(
+                            text = "Capture or select media. Sanitization happens locally before upload.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = VeritiTextSecondary,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Button(
+                                onClick = {
+                                    permissionPrompt = PermissionPrompt(
+                                        title = "Camera access",
+                                        message = "To capture incident evidence and determine your approximate area only.",
+                                        permissions = cameraPermissions(),
+                                        action = MediaAction.Camera,
+                                    )
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VeritiSurfaceElevated,
+                                    contentColor = VeritiTextPrimary,
+                                    disabledContainerColor = VeritiBorder,
+                                    disabledContentColor = VeritiTextMuted,
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, VeritiBorder),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.PhotoCamera,
+                                    contentDescription = null,
+                                    tint = VeritiBlue,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = "Take Photo",
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    color = VeritiTextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    permissionPrompt = PermissionPrompt(
+                                        title = "Gallery access",
+                                        message = "To choose incident evidence from your library and determine your approximate area only.",
+                                        permissions = galleryPermissions(),
+                                        action = MediaAction.Gallery,
+                                    )
+                                },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VeritiSurfaceElevated,
+                                    contentColor = VeritiTextPrimary,
+                                    disabledContainerColor = VeritiBorder,
+                                    disabledContentColor = VeritiTextMuted,
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, VeritiBorder),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.VideoLibrary,
+                                    contentDescription = null,
+                                    tint = VeritiBlue,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = "Choose Gallery",
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    color = VeritiTextPrimary,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                            }
+                        }
+                    }
                 }
 
-                if (isUploading) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        LinearProgressIndicator(progress = uploadProgress, modifier = Modifier.fillMaxWidth())
-                        Text(
-                            text = "Uploading sanitized report... ${(uploadProgress * 100).toInt()}%",
-                            style = MaterialTheme.typography.bodySmall,
+                previewBitmap?.let { bitmap ->
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = VeritiSurface),
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Selected media preview",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
                         )
+                    }
+                }
+
+                PrivacyStatusCard(state = pipelineState)
+
+                TextField(
+                    value = noteText,
+                    onValueChange = { noteText = it.take(500) },
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = TextStyle(color = VeritiTextPrimary, fontSize = 14.sp),
+                    placeholder = {
+                        Text(
+                            "What did you observe?",
+                            color = VeritiTextMuted,
+                            fontSize = 14.sp,
+                        )
+                    },
+                    supportingText = {
+                        Text(
+                            "Optional - Personal details auto-removed",
+                            color = VeritiTextMuted,
+                            fontSize = 12.sp,
+                        )
+                    },
+                    minLines = 3,
+                    maxLines = 3,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = VeritiSurface,
+                        unfocusedContainerColor = VeritiSurface,
+                        disabledContainerColor = VeritiSurface,
+                        focusedIndicatorColor = VeritiBlue,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                        focusedTextColor = VeritiTextPrimary,
+                        unfocusedTextColor = VeritiTextPrimary,
+                        cursorColor = VeritiBlue,
+                        focusedSupportingTextColor = VeritiTextMuted,
+                        unfocusedSupportingTextColor = VeritiTextMuted,
+                    ),
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "INCIDENT TYPE",
+                        fontSize = 13.sp,
+                        color = VeritiTextMuted,
+                        letterSpacing = 1.5.sp,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        incidentTypes.forEach { type ->
+                            FilterChip(
+                                selected = selectedIncidentType == type,
+                                onClick = { selectedIncidentType = type },
+                                label = {
+                                    Text(
+                                        type.label,
+                                        fontSize = 14.sp,
+                                        color = if (selectedIncidentType == type) VeritiBlue else VeritiTextSecondary,
+                                    )
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                border = FilterChipDefaults.filterChipBorder(
+                                    enabled = true,
+                                    selected = selectedIncidentType == type,
+                                    borderColor = VeritiBorder,
+                                    selectedBorderColor = VeritiBlue,
+                                ),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    containerColor = VeritiSurface,
+                                    labelColor = VeritiTextSecondary,
+                                    selectedContainerColor = VeritiBlue.copy(alpha = 0.15f),
+                                    selectedLabelColor = VeritiBlue,
+                                ),
+                            )
+                        }
                     }
                 }
 
@@ -544,16 +744,30 @@ private fun PermissionExplanationDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(prompt.title) },
-        text = { Text(prompt.message) },
+        containerColor = VeritiSurface,
+        titleContentColor = VeritiTextPrimary,
+        textContentColor = VeritiTextSecondary,
+        title = {
+            Text(
+                text = prompt.title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+            )
+        },
+        text = {
+            Text(
+                text = prompt.message,
+                fontSize = 13.sp,
+            )
+        },
         confirmButton = {
             TextButton(onClick = onContinue) {
-                Text("Continue")
+                Text("Continue", color = VeritiBlue)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel", color = VeritiTextMuted)
             }
         },
     )
@@ -564,24 +778,29 @@ private fun StatusCard(
     message: String,
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = VeritiSurface,
         ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, VeritiBorder),
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
                 text = "Submission Status",
-                style = MaterialTheme.typography.titleMedium,
+                color = VeritiTextMuted,
+                fontSize = 12.sp,
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
+                color = VeritiTextSecondary,
             )
         }
     }
@@ -595,44 +814,40 @@ private fun SuccessOverlay(onDone: () -> Unit) {
             .background(Color.Black.copy(alpha = 0.45f)),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
+            shape = RoundedCornerShape(12.dp),
+            color = VeritiSurface,
+            border = androidx.compose.foundation.BorderStroke(1.dp, VeritiBorder),
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Filled.CheckCircle,
+                    imageVector = Icons.Outlined.VerifiedUser,
                     contentDescription = null,
-                    tint = Color(0xFF1FA25C),
-                    modifier = Modifier.height(72.dp),
+                    tint = VeritiSuccess,
+                    modifier = Modifier.size(32.dp),
                 )
                 Text(
-                    text = "Report Submitted Anonymously ✅",
-                    style = MaterialTheme.typography.headlineSmall,
-                    textAlign = TextAlign.Center,
+                    text = "Report Submitted",
+                    color = VeritiTextPrimary,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = "Your report has been received and will be verified against other independent reports.",
-                    style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                 )
                 Text(
-                    text = "All identifying metadata was stripped before upload.",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Your anonymous report is being verified.",
+                    color = VeritiTextSecondary,
+                    fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                 )
-                Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
-                    Text("Done")
+                TextButton(onClick = onDone) {
+                    Text("Dismiss", color = VeritiBlue)
                 }
             }
         }
