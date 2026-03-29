@@ -8,6 +8,7 @@ from models.submission import Submission
 from services.clustering_service import build_incident_title
 from services.gemini_service import (
     analyze_and_cross_validate,
+    analyze_video_and_cross_validate,
     extract_incident_type,
     generate_confidence_explanation,
     generate_incident_summary,
@@ -58,9 +59,26 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 media_analysis.get("trust_modifier", 0.0),
             )
         elif submission.media_type == "video":
-            # TODO: Add Gemini video analysis support once the MVP pipeline handles video frames.
-            media_analysis = None
-            logger.info("Submission %s skipped Gemini Vision for video media.", submission.id)
+            neighborhood = get_neighborhood_name(
+                submission.grid_cell,
+                submission.latitude,
+                submission.longitude,
+            )
+            media_analysis = analyze_video_and_cross_validate(
+                file_path=submission.media_path,
+                text_note=submission.text_note,
+                claimed_lat=submission.latitude,
+                claimed_lng=submission.longitude,
+                neighborhood_name=neighborhood,
+            )
+            preferred_type = media_analysis.get("detected_incident_type", "unknown")
+            logger.info(
+                "Submission %s video analysis source=%s detected_type=%s trust_modifier=%s",
+                submission.id,
+                "fallback" if is_fallback_media_analysis(media_analysis) else "gemini",
+                preferred_type,
+                media_analysis.get("trust_modifier", 0.0),
+            )
 
         submission, incident = process_submission(session, submission_id)
         if incident is not None:
@@ -110,11 +128,13 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 incident,
                 linked_submissions,
             )
+            summary_source = getattr(incident, "_summary_generation_source", "unknown")
+            confidence_source = getattr(incident, "_confidence_explanation_source", "unknown")
             logger.info(
                 "Incident %s summary_source=%s confidence_explanation_source=%s final_type=%s final_tier=%s final_score=%.3f",
                 incident.id,
-                getattr(incident, "_summary_generation_source", "unknown"),
-                getattr(incident, "_confidence_explanation_source", "unknown"),
+                summary_source,
+                confidence_source,
                 incident.type,
                 incident.confidence_tier,
                 incident.confidence_score,

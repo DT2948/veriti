@@ -41,6 +41,24 @@ function formatRelativeTime(timestamp: string): string {
   return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 }
 
+function isRecentlyUpdated(timestamp: string, minutes = 2): boolean {
+  const date = parseUtcTimestamp(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+  return Date.now() - date.getTime() <= minutes * 60 * 1000;
+}
+
+function hasGenericSummary(summary: string): boolean {
+  const normalized = (summary || "").toLowerCase();
+  return (
+    normalized.includes("independent report(s) indicate") ||
+    normalized.includes("photos were received alongside these reports") ||
+    normalized.includes("videos were received alongside these reports") ||
+    normalized.includes("photos and videos were received alongside these reports")
+  );
+}
+
 export function IncidentCard({
   incident,
   expanded,
@@ -52,6 +70,14 @@ export function IncidentCard({
   onClick: () => void;
   highlighted: boolean;
 }) {
+  const analyzing = isRecentlyUpdated(incident.timestamp_last_updated) &&
+    hasGenericSummary(incident.summary);
+  const summaryPreview = analyzing
+    ? "Analyzing submitted media and generating summary..."
+    : incident.summary
+      ? `${incident.summary.slice(0, 70)}...`
+      : "Awaiting summary";
+
   return (
     <button
       id={`incident-${incident.id}`}
@@ -80,10 +106,19 @@ export function IncidentCard({
             <p>{Math.round(incident.confidence_score * 100)}% confidence</p>
             <p>{incident.number_of_reports} independent reports</p>
             <p>{formatRelativeTime(incident.timestamp_last_updated)}</p>
-            <p className="text-slate-400">
-              {incident.summary ? `${incident.summary.slice(0, 70)}...` : "Awaiting summary"}
+            <p className={analyzing ? "font-medium text-official" : "text-slate-400"}>
+              {summaryPreview}
             </p>
           </div>
+
+          {analyzing ? (
+            <div className="rounded-2xl border border-official/50 bg-official/15 px-3 py-3 text-sm font-medium text-official shadow-[0_0_0_1px_rgba(34,197,94,0.08)]">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-official animate-pulse" />
+                <span>Analyzing submitted media and refreshing summary...</span>
+              </div>
+            </div>
+          ) : null}
 
           {expanded ? <IncidentDetail incident={incident} /> : null}
         </div>

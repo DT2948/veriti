@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import subprocess
+import tempfile
 from io import BytesIO
 from pathlib import Path
 from typing import Iterable
@@ -18,6 +21,7 @@ from utils.incident_types import ALLOWED_TYPES, DEFAULT_TYPE
 settings = get_settings()
 _client: genai.Client | None = None
 logger = logging.getLogger(__name__)
+GEMINI_MODEL = "gemini-2.5-flash"
 FALLBACK_ANALYSIS_EXPLANATION = "Cross-validation could not be performed."
 MISSILE_KEYWORDS = {
     "missile",
@@ -76,7 +80,7 @@ def _generate_text(prompt: str) -> str:
         raise RuntimeError("Gemini API key is not configured.")
 
     response = client.models.generate_content(
-        model="gemini-2.0-flash",
+        model=GEMINI_MODEL,
         contents=prompt,
     )
     text = getattr(response, "text", "") or ""
@@ -106,11 +110,31 @@ def _extract_json_object(text: str) -> str:
     return candidate
 
 
-def _fallback_analysis() -> dict:
+def _extract_json_array(text: str) -> str:
+    candidate = _clean_json_text(text)
+    start = candidate.find("[")
+    end = candidate.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        return candidate[start : end + 1]
+    return candidate
+
+
+def _load_json_object(text: str) -> dict:
+    candidate = _extract_json_object(text)
+    try:
+        parsed = json.loads(candidate)
+    except json.JSONDecodeError:
+        repaired = re.sub(r",\s*([}\]])", r"\1", candidate)
+        parsed = json.loads(repaired)
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _fallback_analysis(error_message: str | None = None) -> dict:
     return {
         "media_description": "Media analysis unavailable.",
         "detected_incident_type": DEFAULT_TYPE,
         "analysis_source": "fallback",
+        "error_message": error_message or "",
         "severity_estimate": "unclear",
         "visible_landmarks": [],
         "inferred_location": "unknown",
@@ -195,6 +219,21 @@ def _normalize_analysis_payload(payload: dict) -> dict:
     }
 
 
+def _normalize_media_evidence_payload(payload: dict) -> dict:
+    return {
+        "observations": [str(item).strip() for item in (payload.get("observations") or []) if str(item).strip()],
+        "environment": [str(item).strip() for item in (payload.get("environment") or []) if str(item).strip()],
+        "hazards": [str(item).strip() for item in (payload.get("hazards") or []) if str(item).strip()],
+        "visual_cues": [str(item).strip() for item in (payload.get("visual_cues") or []) if str(item).strip()],
+        "smoke_visible": bool(payload.get("smoke_visible", False)),
+        "fire_visible": bool(payload.get("fire_visible", False)),
+        "damage_visible": bool(payload.get("damage_visible", False)),
+        "airport_interior_visible": bool(payload.get("airport_interior_visible", False)),
+        "people_visible": bool(payload.get("people_visible", False)),
+        "uncertainties": [str(item).strip() for item in (payload.get("uncertainties") or []) if str(item).strip()],
+    }
+
+
 def is_fallback_media_analysis(media_analysis: dict | None) -> bool:
     if not media_analysis:
         return True
@@ -230,6 +269,32 @@ def _load_image_bytes(file_path: str) -> tuple[bytes, str]:
         save_mime_type = "image/png" if output_format == "PNG" else "image/jpeg"
         image.save(output, format=output_format, quality=88)
         return output.getvalue(), save_mime_type
+
+
+def _extract_video_frame_parts(file_path: str, max_frames: int = 3) -> list[types.Part]:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_pattern = str(Path(temp_dir) / "frame_%02d.jpg")
+        command = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-i",
+            file_path,
+            "-vf",
+            "fps=1/2,scale='min(1024,iw)':-2",
+            "-frames:v",
+            str(max_frames),
+            output_pattern,
+        ]
+        subprocess.run(command, check=True, capture_output=True, text=True)
+
+        frame_paths = sorted(Path(temp_dir).glob("frame_*.jpg"))
+        parts: list[types.Part] = []
+        for frame_path in frame_paths:
+            frame_bytes, mime_type = _load_image_bytes(str(frame_path))
+            parts.append(types.Part.from_bytes(data=frame_bytes, mime_type=mime_type))
+        return parts
 
 
 def _fallback_incident_type(text_note: str) -> str:
@@ -284,14 +349,183 @@ def _build_media_observation(media_analysis: dict | None) -> str:
 
     lowered = description.lower()
     if "smoke" in lowered and any(term in lowered for term in {"airport", "terminal", "inside", "interior"}):
-        return "Photos received appear to show smoke inside the airport."
+        return "Submitted media appear to show smoke inside the airport."
     if "smoke" in lowered:
-        return "Photos received appear to show visible smoke at the reported location."
+        return "Submitted media appear to show visible smoke at the reported location."
     if any(term in lowered for term in {"fire", "flames", "burning"}):
-        return "Photos received appear to show fire at the reported location."
+        return "Submitted media appear to show fire at the reported location."
     if any(term in lowered for term in {"debris", "wreckage", "damage", "damaged"}):
-        return "Photos received appear to show visible damage at the reported location."
-    return f"Photos received appear to show {description.rstrip('.')}."
+        return "Submitted media appear to show visible damage at the reported location."
+    return f"Submitted media appear to show {description.rstrip('.')}."
+
+
+def _extract_media_evidence(
+    media_parts: list[types.Part],
+    media_descriptor: str,
+) -> dict:
+    client = _get_client()
+    if client is None:
+        raise RuntimeError("Gemini API key is not configured.")
+
+    prompt = f"""
+You are a visual evidence parser for a civilian safety platform in Dubai.
+Your only job is to describe what is concretely visible in the submitted media.
+
+MEDIA INPUT: {media_descriptor}
+
+Rules:
+- Focus only on visible evidence.
+- Do not classify the incident.
+- Do not infer causes unless directly visible.
+- If multiple keyframes are attached, treat them as frames from one video.
+- Prefer short factual phrases.
+- Explicitly capture smoke, fire, debris, visible damage, airport/terminal interiors, windows, seating, signage, people, responders, haze, ceiling damage, broken glass, or aircraft/runway context when present.
+
+Return valid JSON in exactly this shape:
+{{
+  "observations": ["..."],
+  "environment": ["..."],
+  "hazards": ["..."],
+  "visual_cues": ["..."],
+  "smoke_visible": false,
+  "fire_visible": false,
+  "damage_visible": false,
+  "airport_interior_visible": false,
+  "people_visible": false,
+  "uncertainties": ["..."]
+}}
+""".strip()
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=[prompt, *media_parts],
+    )
+    text = getattr(response, "text", "") or ""
+    if not text.strip():
+        raise RuntimeError("Gemini returned empty media evidence output.")
+    payload = _load_json_object(text)
+    return _normalize_media_evidence_payload(payload)
+
+
+def _compose_media_description_from_evidence(evidence: dict) -> str:
+    observations = evidence.get("observations") or []
+    environment = evidence.get("environment") or []
+    hazards = evidence.get("hazards") or []
+    visual_cues = evidence.get("visual_cues") or []
+
+    priority_bits: list[str] = []
+    if evidence.get("smoke_visible"):
+        priority_bits.append("visible smoke")
+    if evidence.get("fire_visible"):
+        priority_bits.append("possible fire or flames")
+    if evidence.get("damage_visible"):
+        priority_bits.append("visible damage")
+    if evidence.get("airport_interior_visible"):
+        priority_bits.append("what appears to be the interior of an airport or terminal")
+
+    detail_bits = observations[:2] + hazards[:2] + environment[:2] + visual_cues[:2]
+    deduped_details: list[str] = []
+    seen = set()
+    for item in priority_bits + detail_bits:
+        normalized = item.lower().strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            deduped_details.append(item.strip())
+
+    if not deduped_details:
+        return "Media analysis unavailable."
+    return "The submitted media show " + ", ".join(deduped_details[:4]) + "."
+
+
+def _synthesize_media_analysis(
+    evidence: dict,
+    text_note: str | None,
+    claimed_lat: float | None,
+    claimed_lng: float | None,
+    neighborhood_name: str | None,
+) -> dict:
+    client = _get_client()
+    if client is None:
+        raise RuntimeError("Gemini API key is not configured.")
+
+    media_description = _compose_media_description_from_evidence(evidence)
+    prompt = f"""
+You are a crisis verification analyst for a civilian safety platform in Dubai.
+You have already been given structured visual evidence extracted from the submitted media.
+Use that evidence, plus the caption and claimed location, to classify the incident and assess consistency.
+
+CLAIMED LOCATION: {neighborhood_name or "Not provided"} (coordinates: {claimed_lat}, {claimed_lng})
+USER CAPTION: "{text_note or "No caption provided"}"
+MEDIA DESCRIPTION: {media_description}
+MEDIA OBSERVATIONS: {json.dumps(evidence.get("observations") or [])}
+MEDIA ENVIRONMENT: {json.dumps(evidence.get("environment") or [])}
+MEDIA HAZARDS: {json.dumps(evidence.get("hazards") or [])}
+MEDIA VISUAL CUES: {json.dumps(evidence.get("visual_cues") or [])}
+SMOKE VISIBLE: {evidence.get("smoke_visible", False)}
+FIRE VISIBLE: {evidence.get("fire_visible", False)}
+DAMAGE VISIBLE: {evidence.get("damage_visible", False)}
+AIRPORT INTERIOR VISIBLE: {evidence.get("airport_interior_visible", False)}
+PEOPLE VISIBLE: {evidence.get("people_visible", False)}
+UNCERTAINTIES: {json.dumps(evidence.get("uncertainties") or [])}
+
+Use only the provided incident labels. Prefer "drone" over "missile" for generic strike language unless missile/rocket/projectile evidence is explicit.
+Keep "media_description" grounded in the provided visual evidence.
+Choose "unknown" only if the combined evidence is too ambiguous.
+
+Respond in this exact JSON format:
+{{
+  "media_description": "...",
+  "detected_incident_type": "%s",
+  "severity_estimate": "high|medium|low|unclear",
+  "visible_landmarks": ["..."],
+  "inferred_location": "...",
+  "plausibility": "genuine_photo|screenshot|recycled|unclear",
+  "cross_validation": {{
+    "caption_media_match": "agree|disagree|neutral",
+    "location_media_match": "agree|disagree|neutral",
+    "caption_location_match": "agree|disagree|neutral",
+    "overall_consistency": "consistent|partial|inconsistent",
+    "explanation": "..."
+  }},
+  "trust_modifier": 0.0,
+  "inferred_data": {{
+    "suggested_type": "...",
+    "suggested_location": "..."
+  }}
+}}
+""" % "|".join(sorted(ALLOWED_TYPES))
+    prompt = prompt.strip()
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+    )
+    text = getattr(response, "text", "") or ""
+    if not text.strip():
+        raise RuntimeError("Gemini returned empty synthesis output.")
+    payload = _load_json_object(text)
+    normalized = _normalize_analysis_payload(payload)
+    normalized["media_description"] = normalized.get("media_description") or media_description
+    normalized["parsed_media_evidence"] = evidence
+    return normalized
+
+
+def _build_media_receipt_sentence(submissions: Iterable) -> str:
+    photo_count = 0
+    video_count = 0
+    for submission in submissions:
+        if submission.media_type == "image":
+            photo_count += 1
+        elif submission.media_type == "video":
+            video_count += 1
+
+    if photo_count and video_count:
+        return "Photos and videos were received alongside these reports."
+    if video_count:
+        return "Videos were received alongside these reports."
+    if photo_count:
+        return "Photos were received alongside these reports."
+    return ""
 
 
 def _fallback_summary(incident, submissions) -> str:
@@ -302,9 +536,7 @@ def _fallback_summary(incident, submissions) -> str:
     )
     incident_phrase = "drone strike" if incident.type == "drone" else incident.type.replace("_", " ")
     media_observation = _build_media_observation(getattr(incident, "_media_analysis_context", None))
-    media_sentence = ""
-    if incident.media_count:
-        media_sentence = "Photos were received alongside these reports."
+    media_sentence = _build_media_receipt_sentence(submissions)
     qualifier = (
         "Official reporting and public submissions both reference this incident."
         if incident.official_overlap
@@ -352,100 +584,72 @@ def analyze_and_cross_validate(
     claimed_lng: float = None,
     neighborhood_name: str = None,
 ) -> dict:
-    client = _get_client()
-    if client is None:
-        return _fallback_analysis()
-
-    path = Path(file_path)
-    if not path.exists() or not path.is_file():
-        return _fallback_analysis()
-
     try:
         image_bytes, mime_type = _load_image_bytes(file_path)
     except Exception:
         return _fallback_analysis()
 
-    prompt = f"""
-You are a crisis verification analyst for a civilian safety platform in Dubai. You have received a submission with three signals. Analyze the image and cross-validate all signals against each other.
-
-SIGNAL 1 - CLAIMED LOCATION: {neighborhood_name or "Not provided"} (coordinates: {claimed_lat}, {claimed_lng})
-
-SIGNAL 2 - USER CAPTION: "{text_note or "No caption provided"}"
-
-SIGNAL 3 - UPLOADED IMAGE: [attached]
-
-Perform the following analysis:
-
-1. MEDIA ANALYSIS: Describe what the image shows in 2-3 sentences. Identify the incident type, severity, and any visible Dubai landmarks or identifiable locations.
-Use only the provided incident labels. If the scene suggests something was "hit", "struck", or impacted, prefer
-"drone" when the strike source is airborne but not clearly a missile, "missile" only when a rocket, missile,
-projectile, interceptor, or clearly missile-like munition is implied, "explosion" for a blast/fireball,
-"debris" for aftermath, or "warning" for alerts without visible impact. Do not invent a generic "attack" label.
-Choose "unknown" only when the image and caption are both too ambiguous to support any of the provided labels.
-Prefer the most concrete visible event rather than a vague category.
-When the caption says a place was simply "hit" and there is no explicit missile or rocket evidence,
-default to "drone" rather than "missile".
-
-Label guide:
-- "drone": UAV, quadcopter, loitering munition, drone strike, or generic airborne strike where a missile is not clearly shown
-- "missile": projectile strike, incoming rocket, impact language, intercepted munition, or aftermath clearly tied to a strike
-- "explosion": blast, fireball, loud boom, expanding smoke from a detonation, or visible explosion
-- "debris": rubble, wreckage, broken fragments, aftermath damage without a clearly visible blast
-- "siren": visible or described warning sirens/alarms without clear impact evidence
-- "warning": alerts, evacuation, sheltering, or official/public warnings without direct visible impact evidence
-- "unknown": only if none of the above can be supported
-
-2. CROSS-VALIDATION: Compare all three signals:
-- Does the caption match what the image shows?
-- Does the claimed location match what's visible in the image?
-- Does the caption match the claimed location?
-
-3. INFERENCE: If any signal is missing or weak, can the other two compensate?
-- If no caption: suggest incident type from image
-- If no location: suggest area from visible landmarks
-- If image is unclear: rely more on caption + location
-
-4. TRUST ASSESSMENT: Based on consistency of all three signals, provide a trust modifier:
-- All three agree: +0.2 to +0.3
-- Two agree, one missing: +0.1 to +0.15
-- Two agree, one disagrees: -0.1 to -0.15
-- Major inconsistencies: -0.2 to -0.3
-- Cannot determine: 0.0
-
-Respond in this exact JSON format:
-{{
-  "media_description": "...",
-  "detected_incident_type": "%s",
-  "severity_estimate": "high|medium|low|unclear",
-  "visible_landmarks": ["..."],
-  "inferred_location": "...",
-  "plausibility": "genuine_photo|screenshot|recycled|unclear",
-  "cross_validation": {{
-    "caption_media_match": "agree|disagree|neutral",
-    "location_media_match": "agree|disagree|neutral",
-    "caption_location_match": "agree|disagree|neutral",
-    "overall_consistency": "consistent|partial|inconsistent",
-    "explanation": "..."
-  }},
-  "trust_modifier": 0.0,
-  "inferred_data": {{
-    "suggested_type": "...",
-    "suggested_location": "..."
-  }}
-}}
-""" % "|".join(sorted(ALLOWED_TYPES))
-    prompt = prompt.strip()
-
     image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+    return _analyze_media_parts(
+        media_parts=[image_part],
+        media_descriptor="UPLOADED IMAGE",
+        text_note=text_note,
+        claimed_lat=claimed_lat,
+        claimed_lng=claimed_lng,
+        neighborhood_name=neighborhood_name,
+    )
+
+
+def analyze_video_and_cross_validate(
+    file_path: str,
+    text_note: str = None,
+    claimed_lat: float = None,
+    claimed_lng: float = None,
+    neighborhood_name: str = None,
+) -> dict:
+    try:
+        frame_parts = _extract_video_frame_parts(file_path)
+    except Exception as exc:
+        logger.error("Video frame extraction failed: %s", exc, exc_info=True)
+        return _fallback_analysis(str(exc))
+
+    if not frame_parts:
+        return _fallback_analysis()
+
+    return _analyze_media_parts(
+        media_parts=frame_parts,
+        media_descriptor="UPLOADED VIDEO KEYFRAMES",
+        text_note=text_note,
+        claimed_lat=claimed_lat,
+        claimed_lng=claimed_lng,
+        neighborhood_name=neighborhood_name,
+    )
+
+
+def _analyze_media_parts(
+    media_parts: list[types.Part],
+    media_descriptor: str,
+    text_note: str = None,
+    claimed_lat: float = None,
+    claimed_lng: float = None,
+    neighborhood_name: str = None,
+) -> dict:
+    client = _get_client()
+    if client is None:
+        return _fallback_analysis()
 
     try:
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[prompt, image_part],
+        evidence = _extract_media_evidence(
+            media_parts=media_parts,
+            media_descriptor=media_descriptor,
         )
-        text = getattr(response, "text", "") or ""
-        payload = json.loads(_extract_json_object(text))
-        normalized = _normalize_analysis_payload(payload)
+        normalized = _synthesize_media_analysis(
+            evidence=evidence,
+            text_note=text_note,
+            claimed_lat=claimed_lat,
+            claimed_lng=claimed_lng,
+            neighborhood_name=neighborhood_name,
+        )
         normalized["detected_incident_type"] = _rebalance_strike_type(
             normalized["detected_incident_type"],
             text_note=text_note,
@@ -461,7 +665,7 @@ Respond in this exact JSON format:
         return normalized
     except Exception as exc:
         logger.error("Gemini vision analysis failed: %s", exc, exc_info=True)
-        return _fallback_analysis()
+        return _fallback_analysis(str(exc))
 
 
 def generate_incident_summary(incident, submissions, media_analysis: dict | None = None) -> str:
@@ -493,18 +697,20 @@ Report notes:
 {media_context}
 
 If the uploaded media shows concrete visual evidence such as smoke, fire, damage, debris, or the interior of the airport,
-explicitly mention that photos were received showing that evidence. Make the summary sound like an incident report, not a sighting report.
-For example, prefer phrasing like "Photos received appear to show smoke inside the airport" over generic wording like "a drone was seen".
+explicitly mention that photos or videos were received showing that evidence. Make the summary sound like an incident report, not a sighting report.
+For example, prefer phrasing like "Submitted media appear to show smoke inside the airport" over generic wording like "a drone was seen".
 Write a calm, factual summary suitable for concerned residents.
 """.strip()
     try:
         incident._media_analysis_context = media_analysis
         incident._summary_generation_source = "gemini"
+        incident._summary_generation_error = ""
         return _generate_text(prompt)
     except Exception as exc:
         logger.error("Gemini incident summary generation failed: %s", exc, exc_info=True)
         incident._media_analysis_context = media_analysis
         incident._summary_generation_source = "fallback"
+        incident._summary_generation_error = str(exc)
         return _fallback_summary(incident, submissions)
 
 
@@ -517,10 +723,12 @@ or decrease confidence.
 """.strip()
     try:
         incident._confidence_explanation_source = "gemini"
+        incident._confidence_explanation_error = ""
         return _generate_text(prompt)
     except Exception as exc:
         logger.error("Gemini confidence explanation failed: %s", exc, exc_info=True)
         incident._confidence_explanation_source = "fallback"
+        incident._confidence_explanation_error = str(exc)
         return _fallback_confidence_explanation(incident)
 
 

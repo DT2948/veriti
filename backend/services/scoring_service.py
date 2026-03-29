@@ -12,7 +12,7 @@ def compute_confidence_tier(
 ) -> str:
     if official_overlap:
         return "official"
-    if number_of_reports >= 3 or score >= 0.6:
+    if number_of_reports >= 3:
         return "corroborated"
     if number_of_reports >= 2 or score >= 0.3:
         return "plausible"
