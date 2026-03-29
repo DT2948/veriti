@@ -20,11 +20,22 @@ class RateLimiter:
 
     def _prune(self, client_ip: str) -> None:
         now = time.time()
-        self._requests[client_ip] = [
-            timestamp
-            for timestamp in self._requests[client_ip]
-            if now - timestamp < self.window_seconds
-        ]
+        stale_clients = []
+        for tracked_ip, timestamps in self._requests.items():
+            fresh_timestamps = [
+                timestamp
+                for timestamp in timestamps
+                if now - timestamp < self.window_seconds
+            ]
+            if fresh_timestamps:
+                self._requests[tracked_ip] = fresh_timestamps
+            else:
+                stale_clients.append(tracked_ip)
+
+        for tracked_ip in stale_clients:
+            self._requests.pop(tracked_ip, None)
+
+        self._requests.setdefault(client_ip, [])
 
     def is_allowed(self, client_ip: str) -> bool:
         """Check if request is allowed. Clean old entries."""

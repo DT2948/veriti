@@ -41,6 +41,8 @@ function buildChangeSet(previous: Incident[], next: Incident[]): Set<string> {
   return changed;
 }
 
+const DASHBOARD_REFRESH_MS = 5_000;
+
 export function useIncidents(): UseIncidentsResult {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [mapIncidents, setMapIncidents] = useState<MapIncident[]>([]);
@@ -107,7 +109,7 @@ export function useIncidents(): UseIncidentsResult {
 
     const intervalId = window.setInterval(() => {
       void refresh();
-    }, 10_000);
+    }, DASHBOARD_REFRESH_MS);
 
     return () => window.clearInterval(intervalId);
   }, [autoRefresh, refresh]);

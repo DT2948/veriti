@@ -104,7 +104,7 @@ def create_official_alert(
         merge_target.title = alert_data.get("title") or merge_target.title
         merge_target.summary = alert_data.get("summary") or merge_target.summary
         merge_target.timestamp_last_updated = submitted_at
-        merge_target.tags = f'["{incident_type}", "official", "{merge_target.grid_cell}"]'
+        merge_target.tags = f'["{incident_type}", "official"]'
         merge_target.verification_notes = "Merged with official alert ingestion."
         submission.incident_id = merge_target.id
         db.add_all([submission, merge_target])
@@ -127,7 +127,7 @@ def create_official_alert(
             number_of_reports=1,
             official_overlap=True,
             media_count=0,
-            tags=f'["{incident_type}", "official", "{grid_cell}"]',
+            tags=f'["{incident_type}", "official"]',
             verification_notes="Created from official alert ingestion.",
             is_active=True,
         )

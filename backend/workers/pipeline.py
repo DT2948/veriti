@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 import logging
+from pathlib import Path
 
 from sqlalchemy import select
 
 from database import SessionLocal
+from config import get_settings
 from models.submission import Submission
 from services.clustering_service import build_incident_title
 from services.gemini_service import (
@@ -16,19 +18,105 @@ from services.gemini_service import (
 )
 from services.ingestion_service import process_submission
 from services.scoring_service import compute_confidence_tier
-from utils.dubai_locations import get_neighborhood_name
+from utils.dubai_locations import (
+    get_neighborhood_name,
+    is_implausible_report_location,
+    resolve_known_location,
+)
+from utils.location import coarsen_location
+from utils.media import delete_raw_media
 
 
 logger = logging.getLogger(__name__)
+settings = get_settings()
+
+
+def _location_distance(
+    lat_a: float | None,
+    lng_a: float | None,
+    lat_b: float | None,
+    lng_b: float | None,
+) -> float:
+    if None in {lat_a, lng_a, lat_b, lng_b}:
+        return 0.0
+    return ((lat_a - lat_b) ** 2 + (lng_a - lng_b) ** 2) ** 0.5
+
+
+def _resolve_media_location_override(
+    submission: Submission,
+    media_analysis: dict | None,
+) -> tuple[float, float, str] | None:
+    if not media_analysis or is_fallback_media_analysis(media_analysis):
+        return None
+
+    cross_validation = media_analysis.get("cross_validation") or {}
+    overall_consistency = (cross_validation.get("overall_consistency") or "").lower()
+    location_media_match = (cross_validation.get("location_media_match") or "").lower()
+
+    candidate_texts = [
+        media_analysis.get("inferred_location"),
+        media_analysis.get("media_description"),
+        (cross_validation.get("explanation") or ""),
+        submission.text_note,
+        *list(media_analysis.get("visible_landmarks") or []),
+    ]
+
+    resolved_location = next(
+        (
+            location
+            for text in candidate_texts
+            if (location := resolve_known_location(text)) is not None
+        ),
+        None,
+    )
+    if resolved_location is None:
+        return None
+
+    _, resolved_lat, resolved_lng = resolved_location
+    resolved_distance = _location_distance(
+        submission.latitude,
+        submission.longitude,
+        resolved_lat,
+        resolved_lng,
+    )
+    claimed_location_is_implausible = is_implausible_report_location(
+        submission.latitude,
+        submission.longitude,
+    )
+    gemini_detected_mismatch = (
+        location_media_match == "disagree"
+        or overall_consistency in {"inconsistent", "partial"}
+    )
+    resolved_location_is_far = (
+        resolved_distance >= 0.06 and location_media_match != "agree"
+    )
+
+    if (
+        not claimed_location_is_implausible
+        and not gemini_detected_mismatch
+        and not resolved_location_is_far
+    ):
+        return None
+
+    corrected_lat, corrected_lng, corrected_grid_cell = coarsen_location(
+        resolved_lat,
+        resolved_lng,
+        settings.grid_size_meters,
+    )
+    return corrected_lat, corrected_lng, corrected_grid_cell
 
 
 def run_verification_pipeline(db, submission_id: str) -> None:
     own_session = db is None
     session = db or SessionLocal()
+    media_path_to_delete: str | None = None
+    corrected_location: tuple[float, float, str] | None = None
     try:
         submission = session.get(Submission, submission_id)
         if not submission:
             return
+
+        media_path_to_delete = submission.media_path
 
         submission.verification_status = "processing"
         session.add(submission)
@@ -80,8 +168,34 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 media_analysis.get("trust_modifier", 0.0),
             )
 
+        corrected_location = _resolve_media_location_override(submission, media_analysis)
+        if corrected_location is not None:
+            corrected_lat, corrected_lng, corrected_grid_cell = corrected_location
+            logger.info(
+                "Submission %s location corrected from (%s, %s, %s) to (%s, %s, %s) based on media-caption inference.",
+                submission.id,
+                submission.latitude,
+                submission.longitude,
+                submission.grid_cell,
+                corrected_lat,
+                corrected_lng,
+                corrected_grid_cell,
+            )
+            submission.latitude = corrected_lat
+            submission.longitude = corrected_lng
+            submission.grid_cell = corrected_grid_cell
+            session.add(submission)
+            session.commit()
+            session.refresh(submission)
+
         submission, incident = process_submission(session, submission_id)
         if incident is not None:
+            if corrected_location is not None:
+                corrected_lat, corrected_lng, corrected_grid_cell = corrected_location
+                if incident.grid_cell != corrected_grid_cell or incident.number_of_reports == 1:
+                    incident.latitude = corrected_lat
+                    incident.longitude = corrected_lng
+                    incident.grid_cell = corrected_grid_cell
             linked_submissions = session.scalars(
                 select(Submission).where(Submission.incident_id == incident.id)
             ).all()
@@ -149,10 +263,22 @@ def run_verification_pipeline(db, submission_id: str) -> None:
     except Exception:
         submission = session.get(Submission, submission_id)
         if submission:
+            media_path_to_delete = submission.media_path
             submission.verification_status = "rejected"
             submission.processed_at = datetime.now(timezone.utc)
             session.add(submission)
             session.commit()
     finally:
+        if media_path_to_delete:
+            try:
+                if Path(media_path_to_delete).exists():
+                    delete_raw_media(media_path_to_delete, settings.upload_dir)
+            except Exception:
+                logger.warning(
+                    "Failed to delete raw media for submission %s: %s",
+                    submission_id,
+                    media_path_to_delete,
+                    exc_info=True,
+                )
         if own_session:
             session.close()

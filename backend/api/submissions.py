@@ -8,7 +8,7 @@ from database import get_db
 from models.submission import Submission
 from schemas.submission import SubmissionResponse, SubmissionStatus
 from utils.location import coarsen_location
-from utils.media import get_media_type, save_upload
+from utils.media import get_media_type, save_upload, scrub_video_metadata
 from utils.privacy import sanitize_text, strip_exif
 from utils.rate_limiter import upload_rate_limiter
 from workers.pipeline import run_verification_pipeline
@@ -52,6 +52,8 @@ async def upload_submission(
             media_path = await save_upload(file, settings.upload_dir)
             if media_type == "image":
                 strip_exif(media_path)
+            else:
+                scrub_video_metadata(media_path)
 
         sanitized_note = sanitize_text(text_note)
         coarse_lat, coarse_lng, grid_cell = coarsen_location(

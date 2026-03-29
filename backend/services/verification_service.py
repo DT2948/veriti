@@ -30,8 +30,13 @@ def verify_submission(db: Session, submission: Submission) -> Submission:
 
         submission.embedding_vector = json.dumps(generate_embedding(submission.media_path))
 
-    if submission.integrity_token and submission.device_trust_score is None:
-        submission.device_trust_score = validate_integrity_token(submission.integrity_token)
+    raw_integrity_token = submission.integrity_token
+    if raw_integrity_token and submission.device_trust_score is None:
+        submission.device_trust_score = validate_integrity_token(raw_integrity_token)
+
+    # We only retain whether a token was supplied in this MVP, not the
+    # attestation payload itself, to avoid storing raw device-linked tokens.
+    submission.integrity_token = _sanitize_integrity_token(raw_integrity_token)
 
     if submission.verification_status == "pending":
         submission.verification_status = "processing"
@@ -96,3 +101,12 @@ def validate_integrity_token(token: str) -> float:
     if trimmed_length > 24:
         return 0.7
     return 0.55
+
+
+def _sanitize_integrity_token(token: str | None) -> str:
+    if not token:
+        return "missing"
+
+    # Current MVP records that a token was provided, but does not retain the
+    # raw attestation payload after evaluating device trust.
+    return "provided"

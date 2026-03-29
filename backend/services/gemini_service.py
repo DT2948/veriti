@@ -485,6 +485,12 @@ UNCERTAINTIES: {json.dumps(evidence.get("uncertainties") or [])}
 
 Use only the provided incident labels. Prefer "drone" over "missile" for generic strike language unless missile/rocket/projectile evidence is explicit.
 Keep "media_description" grounded in the provided visual evidence.
+For "inferred_location", prefer a specific recognizable Dubai place when the caption or media support it,
+such as "Dubai International Airport (DXB)", "Dubai Marina", "Downtown Dubai / Burj Khalifa",
+"Business Bay", "Deira", "Bur Dubai", "Jumeirah", or "Sheikh Zayed Road".
+If the media show airport-terminal cues, gate signage, concourse interiors, or the caption says DXB or airport,
+prefer "Dubai International Airport (DXB)" over generic phrases like "airport area" or "eastern Dubai".
+If the media or caption mention Fairmont The Palm or a hotel on the Palm, prefer "Palm Jumeirah".
 Choose "unknown" only if the combined evidence is too ambiguous.
 
 Respond in this exact JSON format:
@@ -733,8 +739,9 @@ def generate_confidence_explanation(incident, submissions) -> str:
     prompt = f"""
 Explain in 1-2 sentences why this incident is rated as {incident.confidence_tier}.
 Consider: {incident.number_of_reports} reports, {incident.media_count} media attachments,
-official overlap: {"yes" if incident.official_overlap else "no"}. Be specific about what would increase
-or decrease confidence.
+official overlap: {"yes" if incident.official_overlap else "no"}. Do not mention numeric scores,
+percentages, trust modifiers, or internal scoring mechanics. Explain the confidence in plain language
+and be specific about what would increase or decrease confidence.
 """.strip()
     try:
         incident._confidence_explanation_source = "gemini"

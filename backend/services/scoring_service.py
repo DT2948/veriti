@@ -14,7 +14,7 @@ def compute_confidence_tier(
         return "official"
     if number_of_reports >= 3:
         return "corroborated"
-    if number_of_reports >= 2 or score >= 0.3:
+    if number_of_reports >= 2:
         return "plausible"
     return "unverified"
 
@@ -71,11 +71,28 @@ def score_incident(db: Session, incident: Incident) -> tuple[str, float, str]:
 
     incident.confidence_score = score if tier != "official" else max(score, 0.9)
     incident.confidence_tier = tier
-    incident.verification_notes = (
-        f"{rationale} Avg device trust {avg_device_score:.2f}; "
-        f"media bonus {media_bonus:.2f}; detail bonus {detail_bonus:.2f}; "
-        f"duplicate penalty {duplicate_penalty:.2f}."
-    )
+    if incident.official_overlap or any(s.source_type == "official" for s in submissions):
+        incident.verification_notes = (
+            "This incident is treated as official because it overlaps with an official source."
+        )
+    elif report_count >= 5:
+        incident.verification_notes = (
+            f"{report_count} reports reference the event across "
+            f"{distinct_group_count} distinct evidence group(s), which materially strengthens confidence."
+        )
+    elif report_count >= 3:
+        incident.verification_notes = (
+            f"{report_count} reports point to the same event, though only "
+            f"{distinct_group_count} distinct evidence group(s) were detected."
+        )
+    elif report_count == 2:
+        incident.verification_notes = (
+            "Two reports point to the same place and timeframe, making the incident plausible."
+        )
+    else:
+        incident.verification_notes = (
+            "This incident currently relies on a single report, so confidence remains limited."
+        )
     db.add(incident)
     db.commit()
     db.refresh(incident)

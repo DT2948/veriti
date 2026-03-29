@@ -28,6 +28,40 @@ _KNOWN_NEIGHBORHOODS = {
     "Silicon Oasis": (25.1200, 55.3800),
 }
 
+_LOCATION_ALIASES = {
+    "Dubai Marina": ["dubai marina", "marina"],
+    "Downtown Dubai / Burj Khalifa": ["downtown dubai", "burj khalifa", "downtown"],
+    "Jumeirah Beach (JBR)": ["jbr", "jumeirah beach", "the beach"],
+    "Palm Jumeirah": [
+        "palm jumeirah",
+        "the palm",
+    ],
+    "Dubai International Airport (DXB)": [
+        "dubai international airport",
+        "dxb",
+        "dubai airport",
+        "airport terminal",
+        "terminal 1",
+        "terminal 2",
+        "terminal 3",
+    ],
+    "Deira": ["deira"],
+    "Bur Dubai": ["bur dubai"],
+    "Business Bay": ["business bay"],
+    "Jumeirah Lake Towers (JLT)": ["jlt", "jumeirah lake towers"],
+    "Al Barsha": ["al barsha", "barsha"],
+    "Dubai Creek": ["dubai creek", "the creek"],
+    "Al Quoz": ["al quoz"],
+    "Dubai Internet City": ["dubai internet city", "internet city"],
+    "Dubai Media City": ["dubai media city", "media city"],
+    "Al Karama": ["al karama", "karama"],
+    "Jumeirah": ["jumeirah"],
+    "Sheikh Zayed Road": ["sheikh zayed road", "szr"],
+    "Dubai Hills": ["dubai hills"],
+    "Mirdif": ["mirdif"],
+    "Silicon Oasis": ["silicon oasis", "dubai silicon oasis"],
+}
+
 
 def _grid_cell_for_coordinates(lat: float, lng: float) -> str:
     lat_index = round(lat / GRID_STEP)
@@ -82,3 +116,32 @@ def get_neighborhood_name(grid_cell: str, lat: float = None, lng: float = None) 
             return nearest_name
 
     return _general_area_description(lat, lng)
+
+
+def resolve_known_location(text: str | None) -> tuple[str, float, float] | None:
+    if not text:
+        return None
+
+    lowered = text.lower()
+    best_match: tuple[str, str] | None = None
+    for canonical_name, aliases in _LOCATION_ALIASES.items():
+        for alias in aliases:
+            if alias in lowered:
+                if best_match is None or len(alias) > len(best_match[1]):
+                    best_match = (canonical_name, alias)
+
+    if best_match is not None:
+        canonical_name, _ = best_match
+        lat, lng = _KNOWN_NEIGHBORHOODS[canonical_name]
+        return canonical_name, lat, lng
+    return None
+
+
+def is_implausible_report_location(lat: float | None, lng: float | None) -> bool:
+    if lat is None or lng is None:
+        return False
+
+    # Conservative "in the sea" heuristic for the Gulf-facing west edge of Dubai.
+    # We only use this to permit a landmark-based correction when Gemini also
+    # identifies a recognizable Dubai location.
+    return lng <= 55.08 and lat >= 24.95
