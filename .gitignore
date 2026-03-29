@@ -3,6 +3,9 @@ __pycache__/
 *.pyc
 venv/
 *.db
+.env
+*.env
+backend/.env
 uploads/.env
 
 # Android
