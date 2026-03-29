@@ -1,0 +1,205 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.veriti.app"
+4    android:versionCode="1"
+5    android:versionName="0.1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="26"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:4:5-67
+11-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.CAMERA" />
+12-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:5:5-65
+12-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:5:22-62
+13    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+13-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:6:5-81
+13-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:6:22-78
+14    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+14-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:7:5-76
+14-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:7:22-73
+15    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+15-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:8:5-75
+15-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:8:22-72
+16    <uses-permission
+16-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:9:5-11:38
+17        android:name="android.permission.READ_EXTERNAL_STORAGE"
+17-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:10:9-64
+18        android:maxSdkVersion="32" />
+18-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:11:9-35
+19
+20    <permission
+20-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:22:5-24:47
+21        android:name="com.veriti.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+21-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:23:9-81
+22        android:protectionLevel="signature" />
+22-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:24:9-44
+23
+24    <uses-permission android:name="com.veriti.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+24-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:26:5-97
+24-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:26:22-94
+25
+26    <application
+26-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:13:5-40:19
+27        android:allowBackup="false"
+27-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:14:9-36
+28        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+28-->[androidx.core:core:1.13.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\d73ac552d9c2e1162be6fc2cef0ad540\transformed\core-1.13.1\AndroidManifest.xml:28:18-86
+29        android:debuggable="true"
+30        android:extractNativeLibs="false"
+31        android:icon="@mipmap/ic_launcher"
+31-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:15:9-43
+32        android:label="@string/app_name"
+32-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:16:9-41
+33        android:roundIcon="@mipmap/ic_launcher_round"
+33-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:17:9-54
+34        android:supportsRtl="true"
+34-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:18:9-35
+35        android:testOnly="true"
+36        android:theme="@android:style/Theme.Material.Light.NoActionBar"
+36-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:19:9-72
+37        android:usesCleartextTraffic="true" >
+37-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:20:9-44
+38        <activity
+38-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:21:9-29:20
+39            android:name="com.veriti.app.MainActivity"
+39-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:22:13-41
+40            android:exported="true" >
+40-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:23:13-36
+41            <intent-filter>
+41-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:24:13-28:29
+42                <action android:name="android.intent.action.MAIN" />
+42-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:25:17-69
+42-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:25:25-66
+43
+44                <category android:name="android.intent.category.LAUNCHER" />
+44-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:27:17-77
+44-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:27:27-74
+45            </intent-filter>
+46        </activity>
+47
+48        <provider
+49            android:name="androidx.core.content.FileProvider"
+49-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:32:13-62
+50            android:authorities="com.veriti.app.fileprovider"
+50-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:33:13-64
+51            android:exported="false"
+51-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:34:13-37
+52            android:grantUriPermissions="true" >
+52-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:35:13-47
+53            <meta-data
+53-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:36:13-38:54
+54                android:name="android.support.FILE_PROVIDER_PATHS"
+54-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:37:17-67
+55                android:resource="@xml/file_paths" />
+55-->C:\Veriti\veriti\mobile\android\app\src\main\AndroidManifest.xml:38:17-51
+56        </provider>
+57
+58        <activity
+58-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49f878a669a7f527eda4b69eec6862ba\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:9-173
+59            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+59-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49f878a669a7f527eda4b69eec6862ba\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:19-85
+60            android:exported="false"
+60-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49f878a669a7f527eda4b69eec6862ba\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:146-170
+61            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+61-->[com.google.android.gms:play-services-base:18.5.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49f878a669a7f527eda4b69eec6862ba\transformed\play-services-base-18.5.0\AndroidManifest.xml:5:86-145
+62        <activity
+62-->[androidx.compose.ui:ui-tooling-android:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\390922c10d28301b156be060858d9397\transformed\ui-tooling-release\AndroidManifest.xml:23:9-25:39
+63            android:name="androidx.compose.ui.tooling.PreviewActivity"
+63-->[androidx.compose.ui:ui-tooling-android:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\390922c10d28301b156be060858d9397\transformed\ui-tooling-release\AndroidManifest.xml:24:13-71
+64            android:exported="true" />
+64-->[androidx.compose.ui:ui-tooling-android:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\390922c10d28301b156be060858d9397\transformed\ui-tooling-release\AndroidManifest.xml:25:13-36
+65        <activity
+65-->[androidx.compose.ui:ui-test-manifest:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\46597a0710b7c5f77f403c36db9e895c\transformed\ui-test-manifest-1.6.8\AndroidManifest.xml:23:9-25:39
+66            android:name="androidx.activity.ComponentActivity"
+66-->[androidx.compose.ui:ui-test-manifest:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\46597a0710b7c5f77f403c36db9e895c\transformed\ui-test-manifest-1.6.8\AndroidManifest.xml:24:13-63
+67            android:exported="true" />
+67-->[androidx.compose.ui:ui-test-manifest:1.6.8] C:\Users\darsh\.gradle\caches\8.10.2\transforms\46597a0710b7c5f77f403c36db9e895c\transformed\ui-test-manifest-1.6.8\AndroidManifest.xml:25:13-36
+68
+69        <provider
+69-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:24:9-32:20
+70            android:name="androidx.startup.InitializationProvider"
+70-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:25:13-67
+71            android:authorities="com.veriti.app.androidx-startup"
+71-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:26:13-68
+72            android:exported="false" >
+72-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:27:13-37
+73            <meta-data
+73-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:29:13-31:52
+74                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+74-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:30:17-75
+75                android:value="androidx.startup" />
+75-->[androidx.emoji2:emoji2:1.3.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\913dc1beef09e221949bbd95b2ef2d56\transformed\emoji2-1.3.0\AndroidManifest.xml:31:17-49
+76            <meta-data
+76-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49b6ad8b0d17c3ce96c390df620d5966\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:29:13-31:52
+77                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+77-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49b6ad8b0d17c3ce96c390df620d5966\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:30:17-78
+78                android:value="androidx.startup" />
+78-->[androidx.lifecycle:lifecycle-process:2.8.3] C:\Users\darsh\.gradle\caches\8.10.2\transforms\49b6ad8b0d17c3ce96c390df620d5966\transformed\lifecycle-process-2.8.3\AndroidManifest.xml:31:17-49
+79            <meta-data
+79-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:29:13-31:52
+80                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+80-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:30:17-85
+81                android:value="androidx.startup" />
+81-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:31:17-49
+82        </provider>
+83
+84        <meta-data
+84-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\720d797d65142aff0c6ae7346eb13cf8\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:9-122
+85            android:name="com.google.android.gms.version"
+85-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\720d797d65142aff0c6ae7346eb13cf8\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:20-65
+86            android:value="@integer/google_play_services_version" />
+86-->[com.google.android.gms:play-services-basement:18.4.0] C:\Users\darsh\.gradle\caches\8.10.2\transforms\720d797d65142aff0c6ae7346eb13cf8\transformed\play-services-basement-18.4.0\AndroidManifest.xml:6:66-119
+87
+88        <receiver
+88-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:34:9-52:20
+89            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+89-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:35:13-76
+90            android:directBootAware="false"
+90-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:36:13-44
+91            android:enabled="true"
+91-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:37:13-35
+92            android:exported="true"
+92-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:38:13-36
+93            android:permission="android.permission.DUMP" >
+93-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:39:13-57
+94            <intent-filter>
+94-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:40:13-42:29
+95                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:17-91
+95-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:41:25-88
+96            </intent-filter>
+97            <intent-filter>
+97-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:43:13-45:29
+98                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:17-85
+98-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:44:25-82
+99            </intent-filter>
+100            <intent-filter>
+100-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:46:13-48:29
+101                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:17-88
+101-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:47:25-85
+102            </intent-filter>
+103            <intent-filter>
+103-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:49:13-51:29
+104                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:17-95
+104-->[androidx.profileinstaller:profileinstaller:1.3.1] C:\Users\darsh\.gradle\caches\8.10.2\transforms\ffc95edaaef8e024a315698b5a187b16\transformed\profileinstaller-1.3.1\AndroidManifest.xml:50:25-92
+105            </intent-filter>
+106        </receiver> <!-- The activities will be merged into the manifest of the hosting app. -->
+107        <activity
+107-->[com.google.android.play:core-common:2.0.4] C:\Users\darsh\.gradle\caches\8.10.2\transforms\a95e0173980f62df7c210d96c70d8aea\transformed\core-common-2.0.4\AndroidManifest.xml:14:9-18:65
+108            android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity"
+108-->[com.google.android.play:core-common:2.0.4] C:\Users\darsh\.gradle\caches\8.10.2\transforms\a95e0173980f62df7c210d96c70d8aea\transformed\core-common-2.0.4\AndroidManifest.xml:15:13-93
+109            android:exported="false"
+109-->[com.google.android.play:core-common:2.0.4] C:\Users\darsh\.gradle\caches\8.10.2\transforms\a95e0173980f62df7c210d96c70d8aea\transformed\core-common-2.0.4\AndroidManifest.xml:16:13-37
+110            android:stateNotNeeded="true"
+110-->[com.google.android.play:core-common:2.0.4] C:\Users\darsh\.gradle\caches\8.10.2\transforms\a95e0173980f62df7c210d96c70d8aea\transformed\core-common-2.0.4\AndroidManifest.xml:17:13-42
+111            android:theme="@style/Theme.PlayCore.Transparent" />
+111-->[com.google.android.play:core-common:2.0.4] C:\Users\darsh\.gradle\caches\8.10.2\transforms\a95e0173980f62df7c210d96c70d8aea\transformed\core-common-2.0.4\AndroidManifest.xml:18:13-62
+112    </application>
+113
+114</manifest>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_background">#D7E3FF</color>
+    <string name="app_name">Veriti</string>
+    <string name="privacy_dialog_body">Veriti processes all media locally on your device before uploading. Metadata is stripped, your location is coarsened, and no identifying information is collected. For additional privacy, consider using a VPN.</string>
+    <string name="privacy_dialog_button">I Understand</string>
+    <string name="privacy_dialog_title">Your Privacy is Protected</string>
+</resources>
