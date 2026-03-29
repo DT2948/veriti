@@ -43,6 +43,12 @@ class Incident(Base):
     def tags_list(self) -> list[str]:
         try:
             parsed = json.loads(self.tags or "[]")
-            return parsed if isinstance(parsed, list) else []
+            if not isinstance(parsed, list):
+                return []
+            return [
+                tag
+                for tag in parsed
+                if isinstance(tag, str) and not tag.startswith("grid_")
+            ]
         except json.JSONDecodeError:
             return []

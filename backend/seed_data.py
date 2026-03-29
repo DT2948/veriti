@@ -92,7 +92,7 @@ def seed() -> None:
                 number_of_reports=item["reports"],
                 official_overlap=item["official_overlap"],
                 media_count=item["media_count"],
-                tags=json.dumps([item["type"], item["confidence_tier"], grid_cell]),
+                tags=json.dumps([item["type"], item["confidence_tier"]]),
                 verification_notes=f"Demo incident seeded for hackathon scenario #{index}.",
                 is_active=True,
             )

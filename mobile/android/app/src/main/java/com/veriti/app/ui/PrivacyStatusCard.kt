@@ -73,14 +73,7 @@ fun PrivacyStatusCard(
             PrivacyStepLine("Metadata stripped from media", state.metadata)
             PrivacyStepLine("Location coarsened (~500m)", state.location)
             PrivacyStepLine("Media validated locally", state.mediaValidation)
-            PrivacyStepLine(
-                if (state.integrity.status == StepStatus.Warning) {
-                    "Device integrity unavailable"
-                } else {
-                    "Device integrity verified"
-                },
-                state.integrity,
-            )
+            PrivacyStepLine("Device integrity", state.integrity)
         }
     }
 }

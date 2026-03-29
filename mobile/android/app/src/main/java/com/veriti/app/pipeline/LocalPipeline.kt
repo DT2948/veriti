@@ -96,7 +96,11 @@ class LocalPipeline(
             )
 
             val integrity = integrityChecker.requestToken(validation.sha256)
-            val integrityStatus = if (integrity.available) StepStatus.Success else StepStatus.Warning
+            val integrityStatus = when {
+                integrity.trustScore >= 0.8f -> StepStatus.Success
+                integrity.trustScore >= 0.5f -> StepStatus.Warning
+                else -> StepStatus.Error
+            }
             onState(
                 PipelineState(
                     metadata = PipelineStepState(StepStatus.Success, metadataMessage(mediaKind)),
@@ -108,7 +112,7 @@ class LocalPipeline(
                     integrity = PipelineStepState(integrityStatus, integrity.message),
                     isRunning = false,
                     isReadyForUpload = true,
-                    statusMessage = "All local checks passed. Your data is sanitized.",
+                    statusMessage = "Local privacy and trust checks completed on your device.",
                 )
             )
 
