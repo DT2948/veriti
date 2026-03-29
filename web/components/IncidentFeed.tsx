@@ -30,7 +30,7 @@ export function IncidentFeed({
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden border-l border-line bg-ink">
       <div className="shrink-0 border-b border-line px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-textMuted">
           Incident Feed
         </h2>
       </div>
@@ -46,7 +46,7 @@ export function IncidentFeed({
             />
           ))}
           {incidents.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-slate-500">
+            <div className="px-4 py-10 text-center text-sm text-textMuted">
               No active incidents available.
             </div>
           ) : null}

@@ -59,7 +59,10 @@ export function MapMarker({
   useEffect(() => {
     if (selected) {
       markerRef.current?.openPopup();
+      return;
     }
+
+    markerRef.current?.closePopup();
   }, [selected]);
 
   useEffect(() => {
@@ -101,14 +104,14 @@ export function MapMarker({
       <Popup>
         <div className="w-52 space-y-2">
           <div className="space-y-1">
-            <p className="text-sm font-semibold text-slate-100">
+            <p className="text-sm font-semibold text-textPrimary">
               {(mapIncident.emoji ?? "❓") + " " + mapIncident.title}
             </p>
             <ConfidenceBadge tier={mapIncident.confidence_tier} />
           </div>
-          <div className="space-y-1 text-xs text-slate-400">
+          <div className="space-y-1 text-xs text-textSecondary">
             <p>{mapIncident.number_of_reports} reports</p>
-            <p className="text-slate-500">{summaryPreview}</p>
+            <p className="text-textMuted">{summaryPreview}</p>
           </div>
         </div>
       </Popup>

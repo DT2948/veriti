@@ -81,10 +81,12 @@ import com.veriti.app.pipeline.LocalPipeline
 import com.veriti.app.pipeline.LocalProcessingResult
 import com.veriti.app.pipeline.TextSanitizer
 import com.veriti.app.ui.theme.VeritiBackground
+import com.veriti.app.ui.theme.VeritiAccentSubtle
 import com.veriti.app.ui.theme.VeritiBlue
 import com.veriti.app.ui.theme.VeritiBluePressed
 import com.veriti.app.ui.theme.VeritiBorder
 import com.veriti.app.ui.theme.VeritiDanger
+import com.veriti.app.ui.theme.VeritiPanel
 import com.veriti.app.ui.theme.VeritiSuccess
 import com.veriti.app.ui.theme.VeritiSurface
 import com.veriti.app.ui.theme.VeritiSurfaceElevated
@@ -486,15 +488,15 @@ fun ReportScreen() {
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = VeritiBlue,
-                        contentColor = Color.White,
-                        disabledContainerColor = VeritiBorder,
+                        contentColor = VeritiTextPrimary,
+                        disabledContainerColor = VeritiSurface,
                         disabledContentColor = VeritiTextMuted,
                     ),
                 ) {
                     if (isUploading) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(18.dp),
-                            color = Color.White,
+                            color = VeritiTextPrimary,
                             strokeWidth = 2.dp,
                         )
                     } else {
@@ -658,9 +660,9 @@ fun ReportScreen() {
                     maxLines = 3,
                     shape = RoundedCornerShape(8.dp),
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = VeritiSurface,
-                        unfocusedContainerColor = VeritiSurface,
-                        disabledContainerColor = VeritiSurface,
+                        focusedContainerColor = VeritiPanel,
+                        unfocusedContainerColor = VeritiPanel,
+                        disabledContainerColor = VeritiPanel,
                         focusedIndicatorColor = VeritiBlue,
                         unfocusedIndicatorColor = Color.Transparent,
                         disabledIndicatorColor = Color.Transparent,
@@ -692,7 +694,7 @@ fun ReportScreen() {
                                     Text(
                                         type.label,
                                         fontSize = 14.sp,
-                                        color = if (selectedIncidentType == type) VeritiBlue else VeritiTextSecondary,
+                                        color = if (selectedIncidentType == type) VeritiBluePressed else VeritiTextSecondary,
                                     )
                                 },
                                 shape = RoundedCornerShape(20.dp),
@@ -703,10 +705,10 @@ fun ReportScreen() {
                                     selectedBorderColor = VeritiBlue,
                                 ),
                                 colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = VeritiSurface,
+                                    containerColor = VeritiPanel,
                                     labelColor = VeritiTextSecondary,
-                                    selectedContainerColor = VeritiBlue.copy(alpha = 0.15f),
-                                    selectedLabelColor = VeritiBlue,
+                                    selectedContainerColor = VeritiAccentSubtle,
+                                    selectedLabelColor = VeritiBluePressed,
                                 ),
                             )
                         }
@@ -811,7 +813,7 @@ private fun SuccessOverlay(onDone: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.45f)),
+            .background(VeritiBackground.copy(alpha = 0.72f)),
         contentAlignment = Alignment.Center,
     ) {
         Surface(

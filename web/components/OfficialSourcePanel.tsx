@@ -53,19 +53,19 @@ export function OfficialSourcePanel({
   }
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-ink/80 px-4 backdrop-blur-sm">
       <div className="w-full max-w-xl rounded-md border border-line bg-panel">
         <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">Official Source Intake</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-textPrimary">Official Source Intake</h2>
+            <p className="mt-1 text-xs text-textMuted">
               Paste a government statement or official tweet to parse and publish.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
+            className="rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-textSecondary transition hover:border-primaryHover/40 hover:text-textPrimary"
           >
             Close
           </button>
@@ -73,7 +73,7 @@ export function OfficialSourcePanel({
 
         <form className="space-y-3 px-4 py-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            <label className="text-[10px] uppercase tracking-[0.16em] text-textMuted">
               Official Statement
             </label>
             <textarea
@@ -81,13 +81,13 @@ export function OfficialSourcePanel({
               value={text}
               onChange={(event) => setText(event.target.value)}
               placeholder="Paste official tweet or statement..."
-              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-official/60"
+              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-textPrimary outline-none transition placeholder:text-textMuted focus:border-primaryHover/60"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
+            <label className="text-[10px] uppercase tracking-[0.16em] text-textMuted">
               Source URL
             </label>
             <input
@@ -95,7 +95,7 @@ export function OfficialSourcePanel({
               value={sourceUrl}
               onChange={(event) => setSourceUrl(event.target.value)}
               placeholder="Source URL (optional)"
-              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-official/60"
+              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-textPrimary outline-none transition placeholder:text-textMuted focus:border-primaryHover/60"
             />
           </div>
 
@@ -115,17 +115,17 @@ export function OfficialSourcePanel({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-sm border border-line bg-transparent px-3 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
+              className="rounded-sm border border-line bg-transparent px-3 py-1.5 text-xs text-textSecondary transition hover:border-primaryHover/40 hover:text-textPrimary"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !text.trim()}
-              className="inline-flex items-center gap-2 rounded-sm border border-official/40 bg-official/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition hover:bg-official/15 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-sm border border-primary/40 bg-primary/10 px-3 py-1.5 text-xs font-medium text-textPrimary transition hover:bg-primarySubtle disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-official animate-pulse" />
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
               ) : (
                 <span>📡</span>
               )}

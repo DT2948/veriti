@@ -59,8 +59,8 @@ body {
   height: 100%;
   min-height: 100%;
   overflow: hidden;
-  background: #0a0f1a;
-  color: #e2e8f0;
+  background: #1e1724;
+  color: #ede8ed;
 }
 
 body {
@@ -81,35 +81,35 @@ a {
 .leaflet-container {
   height: 100% !important;
   width: 100% !important;
-  background: #0b1320;
+  background: #2c2230;
 }
 
 .leaflet-popup-content-wrapper {
-  background: #111827 !important;
-  color: #e2e8f0 !important;
-  border: 1px solid #1e293b !important;
+  background: #3a2e39 !important;
+  color: #ede8ed !important;
+  border: 1px solid #4e3e50 !important;
   border-radius: 6px !important;
   box-shadow: none !important;
 }
 
 .leaflet-popup-tip {
-  background: #111827 !important;
-  border: 1px solid #1e293b !important;
+  background: #3a2e39 !important;
+  border: 1px solid #4e3e50 !important;
 }
 
 .leaflet-popup-content {
-  color: #e2e8f0 !important;
+  color: #ede8ed !important;
   font-size: 12px !important;
   line-height: 1.4 !important;
   margin: 6px 8px !important;
 }
 
 .leaflet-popup-close-button {
-  color: #64748b !important;
+  color: #a89ba8 !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: #e2e8f0 !important;
+  color: #ede8ed !important;
 }
 
 .veriti-marker-soft-pulse {
@@ -134,22 +134,22 @@ a {
 
 @keyframes flash {
   0% {
-    box-shadow: 0 0 0 rgba(76, 141, 255, 0);
-    border-color: rgba(76, 141, 255, 0.24);
+    box-shadow: 0 0 0 rgba(47, 140, 150, 0);
+    border-color: rgba(47, 140, 150, 0.24);
   }
   40% {
-    box-shadow: 0 0 0 1px rgba(76, 141, 255, 0.75), 0 0 20px rgba(76, 141, 255, 0.22);
-    border-color: rgba(76, 141, 255, 0.9);
+    box-shadow: 0 0 0 1px rgba(57, 168, 181, 0.78), 0 0 20px rgba(47, 140, 150, 0.24);
+    border-color: rgba(57, 168, 181, 0.92);
   }
   100% {
-    box-shadow: 0 0 0 rgba(76, 141, 255, 0);
-    border-color: rgba(76, 141, 255, 0.24);
+    box-shadow: 0 0 0 rgba(47, 140, 150, 0);
+    border-color: rgba(47, 140, 150, 0.24);
   }
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #1e293b transparent;
+  scrollbar-color: #4e3e50 transparent;
 }
 
 *::-webkit-scrollbar {
@@ -162,6 +162,6 @@ a {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #4e3e50;
   border-radius: 999px;
 }

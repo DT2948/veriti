@@ -119,10 +119,10 @@ export function Header({
     audioState === "playing"
       ? "border-primary/60 bg-primary/10 text-primary"
       : audioState === "loading"
-        ? "border-primary/40 bg-elevated text-slate-100"
+        ? "border-primary/40 bg-elevated text-textPrimary"
         : audioState === "error"
           ? "border-danger/50 bg-danger/10 text-danger"
-          : "border-line bg-transparent text-slate-300 hover:border-primary/40 hover:text-slate-100";
+          : "border-line bg-transparent text-textSecondary hover:border-primary/40 hover:text-textPrimary";
 
   const audioButtonLabel =
     audioState === "playing"
@@ -136,16 +136,16 @@ export function Header({
   return (
     <header className="flex min-h-[50px] items-center justify-between border-b border-line bg-ink px-3 py-2">
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-line bg-panel text-[11px] font-semibold tracking-[0.18em] text-slate-100">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-line bg-panel text-[11px] font-semibold tracking-[0.18em] text-textPrimary">
           V
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
-            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-100">
+            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-textPrimary">
               Veriti
             </h1>
             {refreshing ? (
-              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-textMuted">
                 Refreshing
               </span>
             ) : null}
@@ -154,7 +154,7 @@ export function Header({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="inline-flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+        <div className="inline-flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.18em] text-textMuted">
           <PulsingDot active={autoRefresh} colorClass="bg-success" />
           <span>LIVE</span>
         </div>
@@ -162,7 +162,7 @@ export function Header({
         <button
           type="button"
           onClick={onOpenOfficialSource}
-          className="inline-flex items-center rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
+          className="inline-flex items-center rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-textSecondary transition hover:border-primaryHover/40 hover:text-textPrimary"
         >
           Official Source
         </button>
@@ -179,12 +179,12 @@ export function Header({
           ) : audioState === "error" ? (
             <span className="h-2 w-2 rounded-full bg-danger" />
           ) : (
-            <span className="h-2 w-2 rounded-full bg-slate-500" />
+            <span className="h-2 w-2 rounded-full bg-textMuted" />
           )}
           {audioButtonLabel}
         </button>
 
-        <div className="px-1 text-xs text-slate-500">{incidentCount} active</div>
+        <div className="px-1 text-xs text-textMuted">{incidentCount} active</div>
       </div>
     </header>
   );

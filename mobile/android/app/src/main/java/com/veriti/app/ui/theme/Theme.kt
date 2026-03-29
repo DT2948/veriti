@@ -16,11 +16,11 @@ import androidx.core.view.WindowCompat
 private val VeritiColors = darkColorScheme(
     primary = VeritiBlue,
     onPrimary = VeritiTextPrimary,
-    primaryContainer = VeritiSurfaceElevated,
+    primaryContainer = VeritiAccentSubtle,
     onPrimaryContainer = VeritiTextPrimary,
     secondary = VeritiTextSecondary,
     onSecondary = VeritiTextPrimary,
-    secondaryContainer = VeritiSurface,
+    secondaryContainer = VeritiPanel,
     onSecondaryContainer = VeritiTextSecondary,
     tertiary = VeritiWarning,
     onTertiary = VeritiBackground,

@@ -15,7 +15,7 @@ import type { Incident } from "@/types/incident";
 const CrisisMap = dynamic(() => import("@/components/Map"), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center border border-line bg-panel text-sm text-slate-500">
+    <div className="absolute inset-0 flex items-center justify-center border border-line bg-panel text-sm text-textMuted">
       Loading map...
     </div>
   ),
@@ -40,8 +40,12 @@ export default function DashboardPage() {
   );
   const [officialSourceOpen, setOfficialSourceOpen] = useState(false);
 
+  function handleSelectIncident(id: string) {
+    setSelectedIncidentId((current) => (current === id ? null : id));
+  }
+
   return (
-    <main className="h-screen overflow-hidden bg-transparent px-0 py-0 text-slate-100">
+    <main className="h-screen overflow-hidden bg-transparent px-0 py-0 text-textPrimary">
       <OfficialSourcePanel
         open={officialSourceOpen}
         onClose={() => setOfficialSourceOpen(false)}
@@ -65,11 +69,11 @@ export default function DashboardPage() {
                 incidents={incidents}
                 mapIncidents={mapIncidents}
                 selectedIncidentId={selectedIncidentId}
-                onSelectIncident={setSelectedIncidentId}
+                onSelectIncident={handleSelectIncident}
               />
             </div>
             {loading ? (
-              <div className="pointer-events-none absolute inset-x-3 top-3 border border-line bg-ink/90 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-slate-500 backdrop-blur">
+              <div className="pointer-events-none absolute inset-x-3 top-3 border border-line bg-ink/90 px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-textMuted backdrop-blur">
                 Connecting to live incident map...
               </div>
             ) : null}
@@ -86,7 +90,7 @@ export default function DashboardPage() {
               selectedIncidentId={selectedIncidentId}
               highlightedIds={highlightedIds}
               onSelectIncident={(incident: Incident) => {
-                setSelectedIncidentId(incident.id);
+                handleSelectIncident(incident.id);
               }}
             />
           </div>

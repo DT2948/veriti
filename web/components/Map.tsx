@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import L from "leaflet";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 
 import { MapMarker } from "@/components/MapMarker";
 import type { Incident, MapIncident } from "@/types/incident";
+
+const DEFAULT_CENTER: [number, number] = [25.2048, 55.2708];
+const DEFAULT_ZOOM = 11;
 
 function MapController({
   selectedIncident,
@@ -13,6 +15,7 @@ function MapController({
   selectedIncident: Incident | null;
 }) {
   const map = useMap();
+  const previousSelectedId = useRef<string | null>(null);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -24,22 +27,19 @@ function MapController({
 
   useEffect(() => {
     if (!selectedIncident) {
+      if (previousSelectedId.current) {
+        map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, {
+          duration: 1,
+        });
+      }
+      previousSelectedId.current = null;
       return;
     }
-
-    const mapSize = map.getSize();
-    const targetLatLng = L.latLng(
-      selectedIncident.latitude,
-      selectedIncident.longitude,
-    );
-    const targetPoint = map.latLngToContainerPoint(targetLatLng);
-    const offsetX = mapSize.x * 0.18;
-    const offsetPoint = L.point(targetPoint.x - offsetX, targetPoint.y);
-    const offsetLatLng = map.containerPointToLatLng(offsetPoint);
 
     map.flyTo([selectedIncident.latitude + 0.02, selectedIncident.longitude], 13, {
       duration: 1.1,
     });
+    previousSelectedId.current = selectedIncident.id;
   }, [map, selectedIncident?.id, selectedIncident?.latitude, selectedIncident?.longitude]);
 
   return null;
@@ -68,8 +68,8 @@ export default function CrisisMap({
     <div className="relative h-full min-h-0 overflow-hidden border border-line bg-panel">
       <div className="absolute inset-0">
         <MapContainer
-          center={[25.2048, 55.2708]}
-          zoom={11}
+          center={DEFAULT_CENTER}
+          zoom={DEFAULT_ZOOM}
           scrollWheelZoom
           style={{ height: "100%", width: "100%" }}
         >

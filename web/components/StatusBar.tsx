@@ -34,7 +34,7 @@ export function StatusBar({
   }, []);
 
   return (
-    <footer className="flex h-6 items-center justify-end border-t border-line px-3 text-[11px] text-slate-500/90">
+    <footer className="flex h-6 items-center justify-end border-t border-line px-3 text-[11px] text-textMuted/90">
       <div>Last updated {formatSecondsAgo(lastUpdatedAt, now)}</div>
     </footer>
   );

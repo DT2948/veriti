@@ -71,10 +71,10 @@ export function IncidentCard({
   highlighted: boolean;
 }) {
   const accentColor = {
-    official: "border-l-success",
-    corroborated: "border-l-corroborated",
-    plausible: "border-l-plausible",
-    unverified: "border-l-unverified",
+    official: "#22C55E",
+    corroborated: "#F97316",
+    plausible: "#EAB308",
+    unverified: "#A89BA8",
   }[incident.confidence_tier];
   const analyzing = isRecentlyUpdated(incident.timestamp_last_updated) &&
     hasGenericSummary(incident.summary);
@@ -89,7 +89,8 @@ export function IncidentCard({
       id={`incident-${incident.id}`}
       type="button"
       onClick={onClick}
-      className={`w-full border-l-[3px] ${accentColor} bg-transparent px-3 py-3 text-left transition hover:bg-panel/40 ${
+      style={{ borderLeftColor: accentColor }}
+      className={`w-full border-l-[3px] bg-transparent px-3 py-3 text-left transition hover:bg-panel/40 ${
         highlighted ? "veriti-card-flash" : ""
       } ${expanded ? "bg-panel/60" : ""}`}
     >
@@ -98,29 +99,29 @@ export function IncidentCard({
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 space-y-1">
-              <h3 className="truncate text-sm font-semibold text-slate-100">
+              <h3 className="truncate text-sm font-semibold text-textPrimary">
                 {incident.title}
               </h3>
-              <p className="text-[10px] uppercase tracking-[0.14em] text-slate-600">
+              <p className="text-[10px] uppercase tracking-[0.14em] text-textMuted">
                 {sourceLabel(incident.source_type)}
               </p>
             </div>
             <ConfidenceBadge tier={incident.confidence_tier} />
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-textSecondary">
             <p>{incident.number_of_reports} reports</p>
-            <p className="text-slate-600">•</p>
+            <p className="text-textMuted">•</p>
             <p>{formatRelativeTime(incident.timestamp_last_updated)}</p>
             {analyzing ? (
               <>
-                <p className="text-slate-600">•</p>
+                <p className="text-textMuted">•</p>
                 <p className="text-official">Updating</p>
               </>
             ) : null}
           </div>
 
-          <p className={`truncate text-xs ${analyzing ? "text-official" : "text-slate-500"}`}>
+          <p className={`truncate text-xs ${analyzing ? "text-official" : "text-textMuted"}`}>
             {summaryPreview}
           </p>
 
