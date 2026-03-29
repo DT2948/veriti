@@ -1,4 +1,5 @@
 INCIDENT_TYPES: dict[str, str] = {
+    "drone": "💥",
     "explosion": "💥",
     "debris": "🧱",
     "missile": "🚀",

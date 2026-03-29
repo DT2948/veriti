@@ -18,6 +18,33 @@ from utils.incident_types import ALLOWED_TYPES, DEFAULT_TYPE
 settings = get_settings()
 _client: genai.Client | None = None
 logger = logging.getLogger(__name__)
+FALLBACK_ANALYSIS_EXPLANATION = "Cross-validation could not be performed."
+MISSILE_KEYWORDS = {
+    "missile",
+    "rocket",
+    "projectile",
+    "ballistic",
+    "cruise missile",
+    "interceptor",
+    "interception",
+    "warhead",
+}
+DRONE_KEYWORDS = {
+    "drone",
+    "uav",
+    "quadcopter",
+    "loitering munition",
+    "loitering",
+    "aircraft-like object",
+}
+GENERIC_STRIKE_KEYWORDS = {
+    "hit",
+    "hits",
+    "struck",
+    "strike",
+    "impact",
+    "impacted",
+}
 
 
 def _get_client() -> genai.Client | None:
@@ -83,6 +110,7 @@ def _fallback_analysis() -> dict:
     return {
         "media_description": "Media analysis unavailable.",
         "detected_incident_type": DEFAULT_TYPE,
+        "analysis_source": "fallback",
         "severity_estimate": "unclear",
         "visible_landmarks": [],
         "inferred_location": "unknown",
@@ -92,7 +120,7 @@ def _fallback_analysis() -> dict:
             "location_media_match": "neutral",
             "caption_location_match": "neutral",
             "overall_consistency": "partial",
-            "explanation": "Cross-validation could not be performed.",
+            "explanation": FALLBACK_ANALYSIS_EXPLANATION,
         },
         "trust_modifier": 0.0,
         "inferred_data": {
@@ -119,6 +147,7 @@ def _normalize_analysis_payload(payload: dict) -> dict:
         "detected_incident_type": _normalize_incident_type(
             payload.get("detected_incident_type")
         ),
+        "analysis_source": "gemini",
         "severity_estimate": str(
             payload.get("severity_estimate") or fallback["severity_estimate"]
         ).lower(),
@@ -166,6 +195,15 @@ def _normalize_analysis_payload(payload: dict) -> dict:
     }
 
 
+def is_fallback_media_analysis(media_analysis: dict | None) -> bool:
+    if not media_analysis:
+        return True
+    if media_analysis.get("analysis_source") == "fallback":
+        return True
+    cross_validation = media_analysis.get("cross_validation") or {}
+    return cross_validation.get("explanation") == FALLBACK_ANALYSIS_EXPLANATION
+
+
 def _load_image_bytes(file_path: str) -> tuple[bytes, str]:
     path = Path(file_path)
     mime_map = {
@@ -196,12 +234,17 @@ def _load_image_bytes(file_path: str) -> tuple[bytes, str]:
 
 def _fallback_incident_type(text_note: str) -> str:
     text = (text_note or "").lower()
+    if any(
+        keyword in text
+        for keyword in {"drone", "uav", "drone strike", "drone attack", "quadcopter", "loitering munition"}
+    ):
+        return "drone"
     if any(keyword in text for keyword in {"blast", "explosion", "boom", "detonation"}):
         return "explosion"
-    if any(keyword in text for keyword in {"missile", "rocket", "projectile"}):
+    if any(keyword in text for keyword in {"missile", "rocket", "projectile", "ballistic", "cruise missile"}):
         return "missile"
     if any(keyword in text for keyword in {"strike", "hit", "impacted", "impact"}):
-        return "missile"
+        return "drone"
     if any(keyword in text for keyword in {"debris", "wreckage", "rubble"}):
         return "debris"
     if any(keyword in text for keyword in {"siren", "alarm", "warning siren"}):
@@ -211,29 +254,72 @@ def _fallback_incident_type(text_note: str) -> str:
     return DEFAULT_TYPE
 
 
+def _rebalance_strike_type(
+    detected_type: str,
+    text_note: str | None = None,
+    media_description: str | None = None,
+) -> str:
+    if detected_type != "missile":
+        return detected_type
+
+    combined_text = f"{text_note or ''} {media_description or ''}".lower()
+    has_explicit_missile_signal = any(keyword in combined_text for keyword in MISSILE_KEYWORDS)
+    has_drone_signal = any(keyword in combined_text for keyword in DRONE_KEYWORDS)
+    has_generic_strike_signal = any(keyword in combined_text for keyword in GENERIC_STRIKE_KEYWORDS)
+
+    if has_explicit_missile_signal:
+        return "missile"
+    if has_drone_signal or has_generic_strike_signal:
+        return "drone"
+    return detected_type
+
+
+def _build_media_observation(media_analysis: dict | None) -> str:
+    if not media_analysis:
+        return ""
+
+    description = (media_analysis.get("media_description") or "").strip()
+    if not description or description == "Media analysis unavailable.":
+        return ""
+
+    lowered = description.lower()
+    if "smoke" in lowered and any(term in lowered for term in {"airport", "terminal", "inside", "interior"}):
+        return "Photos received appear to show smoke inside the airport."
+    if "smoke" in lowered:
+        return "Photos received appear to show visible smoke at the reported location."
+    if any(term in lowered for term in {"fire", "flames", "burning"}):
+        return "Photos received appear to show fire at the reported location."
+    if any(term in lowered for term in {"debris", "wreckage", "damage", "damaged"}):
+        return "Photos received appear to show visible damage at the reported location."
+    return f"Photos received appear to show {description.rstrip('.')}."
+
+
 def _fallback_summary(incident, submissions) -> str:
     neighborhood_name = get_neighborhood_name(
         incident.grid_cell,
         incident.latitude,
         incident.longitude,
     )
-    media_context = ""
-    if getattr(incident, "_media_analysis_context", None):
-        cross_validation = incident._media_analysis_context.get("cross_validation", {})
-        media_context = (
-            f" Cross-validation assessed the submission signals as "
-            f"{cross_validation.get('overall_consistency', 'partial')}."
-        )
+    incident_phrase = "drone strike" if incident.type == "drone" else incident.type.replace("_", " ")
+    media_observation = _build_media_observation(getattr(incident, "_media_analysis_context", None))
+    media_sentence = ""
+    if incident.media_count:
+        media_sentence = "Photos were received alongside these reports."
     qualifier = (
         "Official reporting and public submissions both reference this incident."
         if incident.official_overlap
         else "The information remains unconfirmed and is based on incoming reports."
     )
-    return (
-        f"{incident.number_of_reports} independent report(s) indicate a {incident.type.replace('_', ' ')} "
+    summary = (
+        f"{incident.number_of_reports} independent report(s) indicate a {incident_phrase} "
         f"reported near {neighborhood_name}. {qualifier} The current confidence tier is "
-        f"{incident.confidence_tier}.{media_context}"
+        f"{incident.confidence_tier}."
     )
+    if media_sentence:
+        summary = f"{summary} {media_sentence}"
+    if media_observation:
+        summary = f"{summary} {media_observation}"
+    return summary
 
 
 def _fallback_confidence_explanation(incident) -> str:
@@ -292,8 +378,22 @@ Perform the following analysis:
 
 1. MEDIA ANALYSIS: Describe what the image shows in 2-3 sentences. Identify the incident type, severity, and any visible Dubai landmarks or identifiable locations.
 Use only the provided incident labels. If the scene suggests something was "hit", "struck", or impacted, prefer
-"missile" when a projectile is implied, "explosion" for a blast/fireball, "debris" for aftermath, or "warning"
-for alerts without visible impact. Do not invent a generic "attack" label.
+"drone" when the strike source is airborne but not clearly a missile, "missile" only when a rocket, missile,
+projectile, interceptor, or clearly missile-like munition is implied, "explosion" for a blast/fireball,
+"debris" for aftermath, or "warning" for alerts without visible impact. Do not invent a generic "attack" label.
+Choose "unknown" only when the image and caption are both too ambiguous to support any of the provided labels.
+Prefer the most concrete visible event rather than a vague category.
+When the caption says a place was simply "hit" and there is no explicit missile or rocket evidence,
+default to "drone" rather than "missile".
+
+Label guide:
+- "drone": UAV, quadcopter, loitering munition, drone strike, or generic airborne strike where a missile is not clearly shown
+- "missile": projectile strike, incoming rocket, impact language, intercepted munition, or aftermath clearly tied to a strike
+- "explosion": blast, fireball, loud boom, expanding smoke from a detonation, or visible explosion
+- "debris": rubble, wreckage, broken fragments, aftermath damage without a clearly visible blast
+- "siren": visible or described warning sirens/alarms without clear impact evidence
+- "warning": alerts, evacuation, sheltering, or official/public warnings without direct visible impact evidence
+- "unknown": only if none of the above can be supported
 
 2. CROSS-VALIDATION: Compare all three signals:
 - Does the caption match what the image shows?
@@ -345,7 +445,20 @@ Respond in this exact JSON format:
         )
         text = getattr(response, "text", "") or ""
         payload = json.loads(_extract_json_object(text))
-        return _normalize_analysis_payload(payload)
+        normalized = _normalize_analysis_payload(payload)
+        normalized["detected_incident_type"] = _rebalance_strike_type(
+            normalized["detected_incident_type"],
+            text_note=text_note,
+            media_description=normalized.get("media_description"),
+        )
+        inferred_data = normalized.get("inferred_data") or {}
+        inferred_data["suggested_type"] = _rebalance_strike_type(
+            inferred_data.get("suggested_type", DEFAULT_TYPE),
+            text_note=text_note,
+            media_description=normalized.get("media_description"),
+        )
+        normalized["inferred_data"] = inferred_data
+        return normalized
     except Exception as exc:
         logger.error("Gemini vision analysis failed: %s", exc, exc_info=True)
         return _fallback_analysis()
@@ -370,6 +483,7 @@ Trust assessment: {media_analysis.get("cross_validation", {}).get("overall_consi
 You are a crisis information analyst for a civilian safety platform in Dubai. Generate a brief, factual 2-3 sentence summary of this incident. Do NOT present uncertain information as fact. Use phrases like "reportedly", "according to public reports", "unconfirmed" where appropriate.
 
 Incident type: {incident.type}
+Incident title: {incident.title}
 Location: {neighborhood_name}
 Number of independent reports: {incident.number_of_reports}
 Time range: {incident.timestamp_first_seen.isoformat()} to {incident.timestamp_last_updated.isoformat()}
@@ -378,14 +492,19 @@ Report notes:
 {_build_submission_notes(submissions)}
 {media_context}
 
+If the uploaded media shows concrete visual evidence such as smoke, fire, damage, debris, or the interior of the airport,
+explicitly mention that photos were received showing that evidence. Make the summary sound like an incident report, not a sighting report.
+For example, prefer phrasing like "Photos received appear to show smoke inside the airport" over generic wording like "a drone was seen".
 Write a calm, factual summary suitable for concerned residents.
 """.strip()
     try:
         incident._media_analysis_context = media_analysis
+        incident._summary_generation_source = "gemini"
         return _generate_text(prompt)
     except Exception as exc:
         logger.error("Gemini incident summary generation failed: %s", exc, exc_info=True)
         incident._media_analysis_context = media_analysis
+        incident._summary_generation_source = "fallback"
         return _fallback_summary(incident, submissions)
 
 
@@ -397,9 +516,11 @@ official overlap: {"yes" if incident.official_overlap else "no"}. Be specific ab
 or decrease confidence.
 """.strip()
     try:
+        incident._confidence_explanation_source = "gemini"
         return _generate_text(prompt)
     except Exception as exc:
         logger.error("Gemini confidence explanation failed: %s", exc, exc_info=True)
+        incident._confidence_explanation_source = "fallback"
         return _fallback_confidence_explanation(incident)
 
 
@@ -410,15 +531,31 @@ def extract_incident_type(text_note: str, media_description: str | None = None) 
     prompt = f"""
 Classify the incident into exactly one of these labels: {", ".join(allowed_types)}.
 Return only the label.
-If the wording says a location was "hit" or "struck", prefer "missile" when a projectile or impact is implied,
-"explosion" for a blast, "debris" for visible aftermath, or "warning" for alert-only language. Never return "attack".
+If the wording says a location was "hit" or "struck", prefer "drone" for generic airborne strike language,
+"missile" only when a rocket, missile, projectile, or interceptor is implied, "explosion" for a blast,
+"debris" for visible aftermath, or "warning" for alert-only language. Never return "attack".
+Choose "unknown" only if the note and media description are too ambiguous to support any other label.
+If the text only says a site was "hit" and does not mention a missile, rocket, or projectile, default to "drone".
+
+Use this decision order:
+1. "drone" for drone, UAV, quadcopter, loitering munition, or generic airborne strike language
+2. "missile" for explicit missile, rocket, projectile, interceptor, or clearly missile-like language
+3. "explosion" for blast, boom, detonation, or fireball language
+4. "debris" for rubble, wreckage, fragments, collapsed remains, or aftermath damage
+5. "siren" for alarm/siren language
+6. "warning" for alert, evacuation, shelter, or warning language
+7. "unknown" only as a last resort
 
 Text note: {text_note or "none"}
 Media description: {media_description or "none"}
 """.strip()
     try:
         result = _generate_text(prompt).strip().lower()
-        return _normalize_incident_type(result)
+        return _rebalance_strike_type(
+            _normalize_incident_type(result),
+            text_note=text_note,
+            media_description=media_description,
+        )
     except Exception as exc:
         logger.error("Gemini incident type extraction failed: %s", exc, exc_info=True)
         return _fallback_incident_type(f"{text_note or ''} {media_description or ''}".strip())

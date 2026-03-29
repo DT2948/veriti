@@ -80,6 +80,7 @@ private data class IncidentTypeOption(
 )
 
 private val incidentTypes = listOf(
+    IncidentTypeOption("Drone-related", "drone"),
     IncidentTypeOption("Explosion", "explosion"),
     IncidentTypeOption("Debris", "debris"),
     IncidentTypeOption("Siren/Warning", "warning"),

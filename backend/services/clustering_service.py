@@ -14,9 +14,15 @@ from utils.hashing import hamming_distance
 settings = get_settings()
 
 
+def _incident_label_for_display(incident_type: str) -> str:
+    if incident_type == "drone":
+        return "Drone strike"
+    return incident_type.replace("_", " ").title()
+
+
 def build_incident_title(incident_type: str, grid_cell: str, latitude: float, longitude: float) -> str:
     neighborhood_name = get_neighborhood_name(grid_cell, latitude, longitude)
-    readable_type = incident_type.replace("_", " ").title()
+    readable_type = _incident_label_for_display(incident_type)
     return f"{readable_type} reported near {neighborhood_name}"
 
 

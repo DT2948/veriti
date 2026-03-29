@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 
 from sqlalchemy import select
 
@@ -10,10 +11,14 @@ from services.gemini_service import (
     extract_incident_type,
     generate_confidence_explanation,
     generate_incident_summary,
+    is_fallback_media_analysis,
 )
 from services.ingestion_service import process_submission
 from services.scoring_service import compute_confidence_tier
 from utils.dubai_locations import get_neighborhood_name
+
+
+logger = logging.getLogger(__name__)
 
 
 def run_verification_pipeline(db, submission_id: str) -> None:
@@ -45,9 +50,17 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 neighborhood_name=neighborhood,
             )
             preferred_type = media_analysis.get("detected_incident_type", "unknown")
+            logger.info(
+                "Submission %s media analysis source=%s detected_type=%s trust_modifier=%s",
+                submission.id,
+                "fallback" if is_fallback_media_analysis(media_analysis) else "gemini",
+                preferred_type,
+                media_analysis.get("trust_modifier", 0.0),
+            )
         elif submission.media_type == "video":
             # TODO: Add Gemini video analysis support once the MVP pipeline handles video frames.
             media_analysis = None
+            logger.info("Submission %s skipped Gemini Vision for video media.", submission.id)
 
         submission, incident = process_submission(session, submission_id)
         if incident is not None:
@@ -97,14 +110,15 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 incident,
                 linked_submissions,
             )
-            if media_analysis:
-                cross_validation = media_analysis.get("cross_validation", {})
-                consistency = cross_validation.get("overall_consistency", "unknown")
-                explanation = cross_validation.get("explanation", "")
-                incident.verification_notes = (
-                    f"{incident.verification_notes} Signal cross-validation: "
-                    f"{consistency}. {explanation}".strip()
-                )
+            logger.info(
+                "Incident %s summary_source=%s confidence_explanation_source=%s final_type=%s final_tier=%s final_score=%.3f",
+                incident.id,
+                getattr(incident, "_summary_generation_source", "unknown"),
+                getattr(incident, "_confidence_explanation_source", "unknown"),
+                incident.type,
+                incident.confidence_tier,
+                incident.confidence_score,
+            )
             incident.timestamp_last_updated = datetime.now(timezone.utc)
             session.add(incident)
 
