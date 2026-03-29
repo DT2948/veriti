@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from config import get_settings
@@ -10,6 +10,7 @@ from schemas.submission import SubmissionResponse, SubmissionStatus
 from utils.location import coarsen_location
 from utils.media import get_media_type, save_upload
 from utils.privacy import sanitize_text, strip_exif
+from utils.rate_limiter import upload_rate_limiter
 from workers.pipeline import run_verification_pipeline
 
 
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/submissions", tags=["submissions"])
 
 @router.post("/upload", response_model=SubmissionResponse, status_code=status.HTTP_201_CREATED)
 async def upload_submission(
+    request: Request,
     background_tasks: BackgroundTasks,
     file: UploadFile | None = File(default=None),
     text_note: str | None = Form(default=None),
@@ -29,6 +31,15 @@ async def upload_submission(
     db: Session = Depends(get_db),
 ) -> SubmissionResponse:
     try:
+        # Client IP is used only for short-lived in-memory rate limiting.
+        # It is never stored with submissions and never written to persistent storage.
+        client_ip = request.client.host if request.client else "unknown"
+        if not upload_rate_limiter.is_allowed(client_ip):
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many submissions. Please wait before submitting again.",
+            )
+
         media_path = None
         media_type = None
         if file is not None:
