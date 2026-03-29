@@ -50,3 +50,8 @@ class IncidentMapResponse(BaseModel):
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OfficialSourceRequest(BaseModel):
+    text: str
+    source_url: str | None = None

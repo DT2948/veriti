@@ -7,6 +7,7 @@ interface HeaderProps {
   onToggleAutoRefresh: (value: boolean) => void;
   incidentCount: number;
   refreshing: boolean;
+  onOpenOfficialSource: () => void;
 }
 
 export function Header({
@@ -14,6 +15,7 @@ export function Header({
   onToggleAutoRefresh,
   incidentCount,
   refreshing,
+  onOpenOfficialSource,
 }: HeaderProps) {
   return (
     <header className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/90 px-5 py-4 shadow-panel backdrop-blur md:flex-row md:items-center md:justify-between">
@@ -48,6 +50,15 @@ export function Header({
         >
           <PulsingDot active={autoRefresh} colorClass="bg-emerald-400" />
           Auto-refresh {autoRefresh ? "ON" : "OFF"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenOfficialSource}
+          className="inline-flex items-center gap-2 rounded-full border border-[#4c8dff]/35 bg-[#4c8dff]/12 px-3 py-2 text-sm text-[#9fc0ff] transition hover:bg-[#4c8dff]/18"
+        >
+          <span>📡</span>
+          Official Source
         </button>
 
         <button

@@ -89,6 +89,21 @@ def _generate_text(prompt: str) -> str:
     return text.strip()
 
 
+def _generate_text_with_model(prompt: str, model: str) -> str:
+    client = _get_client()
+    if client is None:
+        raise RuntimeError("Gemini API key is not configured.")
+
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+    )
+    text = getattr(response, "text", "") or ""
+    if not text.strip():
+        raise RuntimeError("Gemini returned an empty response.")
+    return text.strip()
+
+
 def _clean_json_text(text: str) -> str:
     candidate = text.strip()
     if candidate.startswith("```"):
@@ -767,3 +782,83 @@ Media description: {media_description or "none"}
     except Exception as exc:
         logger.error("Gemini incident type extraction failed: %s", exc, exc_info=True)
         return _fallback_incident_type(f"{text_note or ''} {media_description or ''}".strip())
+
+
+def parse_official_source(text: str) -> dict:
+    prompt = f"""
+You are a crisis information analyst for a civilian safety platform 
+in Dubai. Parse the following official statement and extract structured 
+incident data.
+
+STATEMENT:
+"{text}"
+
+Extract the following and respond in this exact JSON format:
+{{
+  "incident_type": "<one of: explosion|fire|smoke|debris|missile|siren|warning|structural_damage|attack|chemical|flooding|unknown>",
+  "title": "<short 5-8 word incident title>",
+  "summary": "<clean 2-3 sentence summary for a civilian safety dashboard, attributed to the official source>",
+  "latitude": <float or null>,
+  "longitude": <float or null>,
+  "location_name": "<human readable location from the text>",
+  "severity": "<critical|high|medium|low|unclear>"
+}}
+
+LOCATION RESOLUTION — if the statement mentions a known Dubai location, 
+resolve to approximate coordinates:
+  Dubai International Airport (DXB): 25.2528, 55.3644
+  Al Maktoum International Airport (DWC): 24.8967, 55.1614
+  Burj Khalifa / Downtown Dubai: 25.1972, 55.2744
+  Dubai Marina: 25.0805, 55.1403
+  Palm Jumeirah: 25.1124, 55.1390
+  Jebel Ali Port: 25.0077, 55.0810
+  Deira: 25.2697, 55.3095
+  Bur Dubai: 25.2567, 55.2921
+  Dubai Mall: 25.1985, 55.2796
+  Sheikh Zayed Road: 25.2048, 55.2708
+  Dubai Creek: 25.2600, 55.3200
+  Jumeirah Beach: 25.2048, 55.1850
+  Business Bay: 25.1860, 55.2715
+  Dubai Healthcare City: 25.2340, 55.3190
+  DIFC: 25.2100, 55.2780
+  Al Quoz: 25.1600, 55.2350
+  Internet City / Media City: 25.0990, 55.1570
+  Dragon Mart / International City: 25.1710, 55.4070
+  Mirdif: 25.2280, 55.4180
+  Jumeirah Village Circle (JVC): 25.0650, 55.2100
+  Dubai Silicon Oasis: 25.1260, 55.3780
+  Al Barsha: 25.1130, 55.2000
+  Nad Al Sheba: 25.1700, 55.3100
+  Ras Al Khor: 25.1850, 55.3350
+  Hatta: 24.7900, 56.1350
+
+If the location is ambiguous or not listed, make your best estimate 
+within Dubai. If no location can be determined at all, use Dubai center: 
+25.2048, 55.2708.
+
+Return ONLY the JSON object, no other text.
+""".strip()
+
+    text_response = _generate_text_with_model(prompt, GEMINI_MODEL)
+    payload = _load_json_object(text_response)
+
+    latitude = payload.get("latitude")
+    longitude = payload.get("longitude")
+    try:
+        latitude = float(latitude) if latitude is not None else 25.2048
+    except (TypeError, ValueError):
+        latitude = 25.2048
+    try:
+        longitude = float(longitude) if longitude is not None else 55.2708
+    except (TypeError, ValueError):
+        longitude = 55.2708
+
+    return {
+        "incident_type": _normalize_incident_type(payload.get("incident_type")),
+        "title": str(payload.get("title") or "Official incident alert").strip(),
+        "summary": str(payload.get("summary") or "").strip(),
+        "latitude": latitude,
+        "longitude": longitude,
+        "location_name": str(payload.get("location_name") or "Dubai").strip(),
+        "severity": str(payload.get("severity") or "unclear").strip().lower(),
+    }

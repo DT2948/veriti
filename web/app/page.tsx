@@ -7,6 +7,7 @@ import { useState } from "react";
 
 import { Header } from "@/components/Header";
 import { IncidentFeed } from "@/components/IncidentFeed";
+import { OfficialSourcePanel } from "@/components/OfficialSourcePanel";
 import { StatusBar } from "@/components/StatusBar";
 import { useIncidents } from "@/hooks/useIncidents";
 import type { Incident } from "@/types/incident";
@@ -32,13 +33,20 @@ export default function DashboardPage() {
     setAutoRefresh,
     lastUpdatedAt,
     highlightedIds,
+    refresh,
   } = useIncidents();
   const [selectedIncidentId, setSelectedIncidentId] = useState<string | null>(
     null,
   );
+  const [officialSourceOpen, setOfficialSourceOpen] = useState(false);
 
   return (
     <main className="h-screen overflow-hidden bg-transparent px-4 py-4 text-slate-100 md:px-6">
+      <OfficialSourcePanel
+        open={officialSourceOpen}
+        onClose={() => setOfficialSourceOpen(false)}
+        onCreated={refresh}
+      />
       <div className="mx-auto flex h-full max-w-[1800px] flex-col gap-4 overflow-hidden">
         <div className="shrink-0">
           <Header
@@ -46,6 +54,7 @@ export default function DashboardPage() {
             onToggleAutoRefresh={setAutoRefresh}
             incidentCount={total}
             refreshing={refreshing}
+            onOpenOfficialSource={() => setOfficialSourceOpen(true)}
           />
         </div>
 
