@@ -12,7 +12,7 @@ const CONFIDENCE_COLORS: Record<string, { fillColor: string; radius: number }> =
   plausible: { fillColor: "#FACC15", radius: 11 },
   corroborated: { fillColor: "#F97316", radius: 14 },
   confirmed: { fillColor: "#EF4444", radius: 15 },
-  official: { fillColor: "#4C8DFF", radius: 16 },
+  official: { fillColor: "#22C55E", radius: 16 },
 };
 
 function markerStyle(tier: MapIncident["confidence_tier"] | "confirmed") {

@@ -9,3 +9,4 @@ numpy
 google-genai
 python-dotenv
 aiofiles
+httpx

@@ -13,6 +13,9 @@ class Settings(BaseModel):
     app_description: str = "Privacy-first crisis signal verification"
     version: str = "0.1.0"
     gemini_api_key: str = Field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    elevenlabs_api_key: str | None = Field(
+        default_factory=lambda: os.getenv("ELEVENLABS_API_KEY")
+    )
     database_url: str = Field(
         default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///veriti.db")
     )

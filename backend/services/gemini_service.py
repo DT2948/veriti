@@ -5,6 +5,7 @@ import logging
 import re
 import subprocess
 import tempfile
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from typing import Iterable
@@ -752,6 +753,59 @@ and be specific about what would increase or decrease confidence.
         incident._confidence_explanation_source = "fallback"
         incident._confidence_explanation_error = str(exc)
         return _fallback_confidence_explanation(incident)
+
+
+def generate_audio_briefing_script(incidents: list) -> str:
+    if not incidents:
+        return (
+            "Veriti situation briefing. No active incidents are currently reported in Dubai. "
+            "This concludes the current briefing. Stay safe."
+        )
+
+    incident_lines: list[str] = []
+    for incident in incidents:
+        neighborhood_name = get_neighborhood_name(
+            incident.grid_cell,
+            incident.latitude,
+            incident.longitude,
+        )
+        incident_lines.append(
+            "\n".join(
+                [
+                    f"Type: {incident.type}",
+                    f"Title: {incident.title}",
+                    f"Location: {neighborhood_name}",
+                    f"Confidence tier: {incident.confidence_tier}",
+                    f"Number of reports: {incident.number_of_reports}",
+                    f"Summary: {incident.summary or 'No summary available.'}",
+                ]
+            )
+        )
+
+    current_time_utc = datetime.now(timezone.utc).strftime("%H:%M UTC")
+    prompt = f"""
+You are a calm, professional crisis information broadcaster for Veriti, a civilian safety platform in Dubai. Generate a brief audio briefing (30-60 seconds when spoken aloud) summarizing the current situation.
+
+Active incidents:
+{chr(10).join(incident_lines)}
+
+Rules:
+- Start with: "Veriti situation briefing, {current_time_utc}."
+- Summarize each incident in 1-2 sentences
+- Use spoken language, not written - no bullet points, no special characters, no abbreviations that sound awkward spoken aloud
+- State confidence levels in plain language: "confirmed by official sources", "corroborated by multiple reports", "reported but unverified"
+- End with: "This concludes the current briefing. Stay safe."
+- If there are no active incidents, say: "Veriti situation briefing. No active incidents are currently reported in Dubai. This concludes the current briefing. Stay safe."
+- Keep it calm and factual. No dramatic language.
+""".strip()
+    try:
+        return _generate_text(prompt)
+    except Exception as exc:
+        logger.error("Gemini audio briefing generation failed: %s", exc, exc_info=True)
+        return (
+            f"Veriti situation briefing. There are currently {len(incidents)} active incidents in Dubai. "
+            "Please check the dashboard for details. Stay safe."
+        )
 
 
 def extract_incident_type(text_note: str, media_description: str | None = None) -> str:
