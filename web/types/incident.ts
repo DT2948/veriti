@@ -1,6 +1,7 @@
 export interface Incident {
   id: string;
   type: string;
+  emoji?: string;
   title: string;
   summary: string;
   source_type: string;
@@ -29,6 +30,7 @@ export interface IncidentListResponse {
 export interface MapIncident {
   id: string;
   type: string;
+  emoji?: string;
   title: string;
   confidence_tier: "official" | "corroborated" | "plausible" | "unverified";
   confidence_score: number;

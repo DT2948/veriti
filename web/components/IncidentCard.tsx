@@ -4,23 +4,6 @@ import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import { IncidentDetail } from "@/components/IncidentDetail";
 import type { Incident } from "@/types/incident";
 
-function iconForType(type: string): string {
-  switch (type) {
-    case "explosion":
-      return "💥";
-    case "debris":
-      return "🧱";
-    case "siren":
-      return "🚨";
-    case "missile":
-      return "🚀";
-    case "warning":
-      return "⚠️";
-    default:
-      return "❓";
-  }
-}
-
 function sourceLabel(sourceType: string): string {
   if (sourceType === "official") {
     return "📡 Official";
@@ -79,7 +62,7 @@ export function IncidentCard({
       } ${expanded ? "bg-panelSoft" : ""}`}
     >
       <div className="flex items-start gap-3">
-        <div className="mt-1 text-2xl">{iconForType(incident.type)}</div>
+        <div className="mt-1 text-2xl">{incident.emoji ?? "❓"}</div>
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">

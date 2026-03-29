@@ -6,6 +6,7 @@ from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
+from utils.incident_types import DEFAULT_TYPE
 
 
 def utcnow() -> datetime:
@@ -16,7 +17,7 @@ class Incident(Base):
     __tablename__ = "incidents"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    type: Mapped[str] = mapped_column(String, nullable=False, default="unknown")
+    type: Mapped[str] = mapped_column(String, nullable=False, default=DEFAULT_TYPE)
     title: Mapped[str] = mapped_column(String, nullable=False)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_type: Mapped[str] = mapped_column(String, nullable=False, default="public")

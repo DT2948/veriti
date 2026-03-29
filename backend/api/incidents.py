@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.incident import Incident
 from schemas.incident import IncidentListResponse, IncidentMapResponse, IncidentResponse
+from utils.incident_types import get_emoji
 
 
 router = APIRouter(prefix="/incidents", tags=["incidents"])
@@ -16,6 +17,7 @@ def _to_incident_response(incident: Incident) -> IncidentResponse:
     return IncidentResponse(
         id=incident.id,
         type=incident.type,
+        emoji=get_emoji(incident.type),
         title=incident.title,
         summary=incident.summary,
         source_type=incident.source_type,
@@ -46,6 +48,7 @@ def list_map_incidents(db: Session = Depends(get_db)) -> list[IncidentMapRespons
         IncidentMapResponse(
             id=incident.id,
             type=incident.type,
+            emoji=get_emoji(incident.type),
             title=incident.title,
             confidence_tier=incident.confidence_tier,
             confidence_score=incident.confidence_score,

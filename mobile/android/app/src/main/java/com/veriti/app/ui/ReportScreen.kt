@@ -74,14 +74,21 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
 
-private val incidentTypes = listOf(
-    "Explosion",
-    "Debris",
-    "Siren/Warning",
-    "Missile-related",
-    "Structural Damage",
-    "Other",
+private data class IncidentTypeOption(
+    val label: String,
+    val value: String,
 )
+
+private val incidentTypes = listOf(
+    IncidentTypeOption("Explosion", "explosion"),
+    IncidentTypeOption("Debris", "debris"),
+    IncidentTypeOption("Siren/Warning", "warning"),
+    IncidentTypeOption("Missile-related", "missile"),
+    IncidentTypeOption("Structural Damage", "unknown"),
+    IncidentTypeOption("Other", "unknown"),
+)
+
+private val defaultIncidentType = incidentTypes.last()
 
 private enum class MediaAction {
     Camera,
@@ -107,7 +114,7 @@ fun ReportScreen() {
     val pipeline = remember(context) { LocalPipeline(context, sessionHashes) }
 
     var noteText by remember { mutableStateOf("") }
-    var selectedIncidentType by remember { mutableStateOf("Other") }
+    var selectedIncidentType by remember { mutableStateOf(defaultIncidentType) }
     var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var pipelineState by remember { mutableStateOf(PipelineState.idle()) }
     var processedMedia by remember { mutableStateOf<LocalProcessingResult?>(null) }
@@ -418,7 +425,7 @@ fun ReportScreen() {
                             FilterChip(
                                 selected = selectedIncidentType == type,
                                 onClick = { selectedIncidentType = type },
-                                label = { Text(type) },
+                                label = { Text(type.label) },
                             )
                         }
                     }
@@ -441,7 +448,7 @@ fun ReportScreen() {
                             longitude = prepared.longitude,
                             deviceTrustScore = prepared.deviceTrustScore,
                             integrityToken = prepared.integrityToken,
-                            incidentType = selectedIncidentType,
+                            incidentType = selectedIncidentType.value,
                         )
                         submitPreparedData(
                             apiClient = apiClient,
@@ -515,7 +522,7 @@ fun ReportScreen() {
                         processedMedia = null
                         previewBitmap = null
                         noteText = ""
-                        selectedIncidentType = "Other"
+                        selectedIncidentType = defaultIncidentType
                         pendingRetry = null
                         pendingSubmittedHash = null
                         uploadProgress = 0f

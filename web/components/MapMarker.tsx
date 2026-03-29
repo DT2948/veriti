@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef } from "react";
 import { CircleMarker, Popup } from "react-leaflet";
@@ -7,17 +7,21 @@ import type L from "leaflet";
 import { ConfidenceBadge } from "@/components/ConfidenceBadge";
 import type { Incident, MapIncident } from "@/types/incident";
 
-function markerStyle(tier: MapIncident["confidence_tier"]) {
-  switch (tier) {
-    case "official":
-      return { color: "#4c8dff", radius: 16 };
-    case "corroborated":
-      return { color: "#ef4444", radius: 14 };
-    case "plausible":
-      return { color: "#f59e0b", radius: 11 };
-    default:
-      return { color: "#94a3b8", radius: 8 };
-  }
+const CONFIDENCE_COLORS: Record<string, { fillColor: string; radius: number }> = {
+  unverified: { fillColor: "#6B7280", radius: 10 },
+  plausible: { fillColor: "#FACC15", radius: 11 },
+  corroborated: { fillColor: "#F97316", radius: 14 },
+  confirmed: { fillColor: "#EF4444", radius: 15 },
+  official: { fillColor: "#22C55E", radius: 16 },
+};
+
+function markerStyle(tier: MapIncident["confidence_tier"] | "confirmed") {
+  const tierStyle = CONFIDENCE_COLORS[tier] ?? CONFIDENCE_COLORS.unverified;
+  return {
+    fillColor: tierStyle.fillColor,
+    borderColor: tierStyle.fillColor,
+    radius: tierStyle.radius,
+  };
 }
 
 function parseUtcTimestamp(timestamp: string): Date {
@@ -47,7 +51,9 @@ export function MapMarker({
   onViewDetails: (id: string) => void;
 }) {
   const markerRef = useRef<L.CircleMarker | null>(null);
-  const { color, radius } = markerStyle(mapIncident.confidence_tier);
+  const { fillColor, borderColor, radius } = markerStyle(
+    mapIncident.confidence_tier,
+  );
   const recent = isRecent(incident?.timestamp_last_updated);
 
   useEffect(() => {
@@ -74,18 +80,19 @@ export function MapMarker({
       }}
       radius={radius}
       pathOptions={{
-        color,
-        fillColor: color,
-        fillOpacity: 0.78,
-        weight: selected ? 3 : 2,
-        className: recent ? "veriti-marker-pulse" : undefined,
+        color: borderColor,
+        fillColor,
+        fillOpacity: selected ? 0.7 : 0.58,
+        opacity: selected ? 0.84 : 0.74,
+        stroke: false,
+        className: recent ? "veriti-marker-soft-pulse" : undefined,
       }}
     >
       <Popup>
         <div className="w-56 space-y-3">
           <div className="space-y-2">
             <p className="text-base font-semibold text-slate-100">
-              {mapIncident.title}
+              {(mapIncident.emoji ?? "❓") + " " + mapIncident.title}
             </p>
             <ConfidenceBadge tier={mapIncident.confidence_tier} />
           </div>

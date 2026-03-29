@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from database import SessionLocal, init_db
 from models.incident import Incident
 from models.submission import Submission
+from utils.incident_types import INCIDENT_TYPES
 from utils.location import coarsen_location
 
 
@@ -72,6 +73,8 @@ def seed() -> None:
         ]
 
         for index, item in enumerate(demos, start=1):
+            if item["type"] not in INCIDENT_TYPES:
+                raise ValueError(f"Unsupported seed incident type: {item['type']}")
             lat, lng, grid_cell = coarsen_location(item["lat"], item["lng"])
             first_seen = now - timedelta(minutes=index * 18)
             incident = Incident(

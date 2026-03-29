@@ -5,6 +5,7 @@ from pydantic import BaseModel, ConfigDict
 
 class IncidentBase(BaseModel):
     type: str
+    emoji: str
     title: str
     summary: str | None = None
     source_type: str
@@ -39,6 +40,7 @@ class IncidentListResponse(BaseModel):
 class IncidentMapResponse(BaseModel):
     id: str
     type: str
+    emoji: str
     title: str
     confidence_tier: str
     confidence_score: float

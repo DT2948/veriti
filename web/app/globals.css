@@ -114,23 +114,23 @@ a {
   color: #e5eefb !important;
 }
 
-.veriti-marker-pulse {
-  animation: pulse 2s ease-in-out infinite;
+.veriti-marker-soft-pulse {
+  animation: marker-soft-pulse 2.4s ease-in-out infinite;
 }
 
 .veriti-card-flash {
   animation: flash 2.2s ease-in-out;
 }
 
-@keyframes pulse {
+@keyframes marker-soft-pulse {
   0% {
-    opacity: 1;
+    opacity: 0.06;
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.78;
   }
   100% {
-    opacity: 1;
+    opacity: 0.06;
   }
 }
 
