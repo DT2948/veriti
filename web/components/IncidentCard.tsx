@@ -1,6 +1,6 @@
 "use client";
 
-import { ConfidenceBadge } from "@/components/ConfidenceBadge";
+import { ConfidenceBadge, formatConfidenceScore } from "@/components/ConfidenceBadge";
 import { IncidentDetail } from "@/components/IncidentDetail";
 import type { Incident } from "@/types/incident";
 
@@ -110,6 +110,8 @@ export function IncidentCard({
           </div>
 
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-textSecondary">
+            <p>{formatConfidenceScore(incident.confidence_score)} confidence</p>
+            <p className="text-textMuted">•</p>
             <p>{incident.number_of_reports} reports</p>
             <p className="text-textMuted">•</p>
             <p>{formatRelativeTime(incident.timestamp_last_updated)}</p>

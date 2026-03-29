@@ -1,3 +1,4 @@
+import { formatConfidenceScore } from "@/components/ConfidenceBadge";
 import type { Incident } from "@/types/incident";
 
 function parseUtcTimestamp(timestamp: string): Date {
@@ -42,6 +43,14 @@ export function IncidentDetail({ incident }: { incident: Incident }) {
       <p className={`leading-5 ${analyzing ? "font-medium text-official" : "text-textSecondary"}`}>
         {summaryText}
       </p>
+      <div>
+        <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-textMuted">
+          Confidence
+        </p>
+        <p className="leading-5 text-textSecondary">
+          {formatConfidenceScore(incident.confidence_score)} confidence.
+        </p>
+      </div>
       <div>
         <p className="mb-1 text-[10px] uppercase tracking-[0.16em] text-textMuted">
           Verification Notes

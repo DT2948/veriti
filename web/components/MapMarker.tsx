@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef } from "react";
 import { CircleMarker, Popup } from "react-leaflet";
 import type L from "leaflet";
 
-import { ConfidenceBadge } from "@/components/ConfidenceBadge";
+import {
+  ConfidenceBadge,
+  formatConfidenceScore,
+} from "@/components/ConfidenceBadge";
 import type { Incident, MapIncident } from "@/types/incident";
 
 const CONFIDENCE_COLORS: Record<string, { fillColor: string; radius: number }> = {
@@ -110,6 +113,7 @@ export function MapMarker({
             <ConfidenceBadge tier={mapIncident.confidence_tier} />
           </div>
           <div className="space-y-1 text-xs text-textSecondary">
+            <p>{formatConfidenceScore(mapIncident.confidence_score)} confidence</p>
             <p>{mapIncident.number_of_reports} reports</p>
             <p className="text-textMuted">{summaryPreview}</p>
           </div>
