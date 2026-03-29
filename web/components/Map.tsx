@@ -65,7 +65,7 @@ export default function CrisisMap({
     incidents.find((incident) => incident.id === selectedIncidentId) ?? null;
 
   return (
-    <div className="relative h-full min-h-0 overflow-hidden rounded-3xl border border-line bg-panel shadow-panel">
+    <div className="relative h-full min-h-0 overflow-hidden border border-line bg-panel">
       <div className="absolute inset-0">
         <MapContainer
           center={[25.2048, 55.2708]}

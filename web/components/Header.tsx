@@ -17,45 +17,38 @@ export function Header({
   refreshing,
   onOpenOfficialSource,
 }: HeaderProps) {
+  void onToggleAutoRefresh;
+
   return (
-    <header className="flex flex-col gap-4 rounded-3xl border border-line bg-panel/90 px-5 py-4 shadow-panel backdrop-blur md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-official/15 ring-1 ring-official/25">
+    <header className="flex min-h-[50px] items-center justify-between border-b border-line bg-ink px-3 py-2">
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-line bg-panel text-xs font-semibold tracking-[0.18em] text-slate-100">
           <span className="text-2xl">🛡️</span>
         </div>
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-100">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <h1 className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-100">
               Veriti
             </h1>
             {refreshing ? (
-              <span className="text-xs uppercase tracking-[0.16em] text-slate-400">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">
                 Refreshing
               </span>
             ) : null}
           </div>
-          <p className="text-sm text-slate-400">Live Crisis Verification</p>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => onToggleAutoRefresh(!autoRefresh)}
-          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
-            autoRefresh
-              ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
-              : "border-line bg-panelSoft text-slate-300"
-          }`}
-        >
-          <PulsingDot active={autoRefresh} colorClass="bg-emerald-400" />
-          Auto-refresh {autoRefresh ? "ON" : "OFF"}
-        </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex items-center gap-2 px-1 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+          <PulsingDot active={autoRefresh} colorClass="bg-success" />
+          <span>LIVE</span>
+        </div>
 
         <button
           type="button"
           onClick={onOpenOfficialSource}
-          className="inline-flex items-center gap-2 rounded-full border border-[#4c8dff]/35 bg-[#4c8dff]/12 px-3 py-2 text-sm text-[#9fc0ff] transition hover:bg-[#4c8dff]/18"
+          className="inline-flex items-center rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
         >
           <span>📡</span>
           Official Source
@@ -65,14 +58,14 @@ export function Header({
           type="button"
           disabled
           title="Coming soon"
-          className="inline-flex cursor-not-allowed items-center gap-2 rounded-full border border-line bg-panelSoft px-3 py-2 text-sm text-slate-500"
+          className="inline-flex cursor-not-allowed items-center rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-slate-500"
         >
           <span>🔊</span>
           Audio briefing
         </button>
 
-        <div className="rounded-full border border-line bg-panelSoft px-3 py-2 text-sm text-slate-300">
-          {incidentCount} active incidents
+        <div className="px-1 text-xs text-slate-500">
+          {incidentCount} active
         </div>
       </div>
     </header>

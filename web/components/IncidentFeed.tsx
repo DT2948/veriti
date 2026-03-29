@@ -28,15 +28,14 @@ export function IncidentFeed({
   }, [selectedIncidentId]);
 
   return (
-    <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-line bg-panel/95 shadow-panel">
-      <div className="shrink-0 border-b border-line px-5 py-4">
-        <h2 className="text-lg font-semibold text-slate-100">Incident Feed</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Live incidents sorted by latest verification activity.
-        </p>
+    <aside className="flex h-full min-h-0 flex-col overflow-hidden border-l border-line bg-ink">
+      <div className="shrink-0 border-b border-line px-3 py-2">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+          Incident Feed
+        </h2>
       </div>
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="space-y-4">
+      <div className="flex-1 overflow-y-auto">
+        <div className="divide-y divide-line">
           {incidents.map((incident) => (
             <IncidentCard
               key={incident.id}
@@ -47,7 +46,7 @@ export function IncidentFeed({
             />
           ))}
           {incidents.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-line px-5 py-12 text-center text-sm text-slate-400">
+            <div className="px-4 py-10 text-center text-sm text-slate-500">
               No active incidents available.
             </div>
           ) : null}

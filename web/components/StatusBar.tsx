@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { PulsingDot } from "@/components/PulsingDot";
-
 function formatSecondsAgo(lastUpdatedAt: number | null, now: number): string {
   if (!lastUpdatedAt) {
     return "never";
@@ -24,6 +22,7 @@ export function StatusBar({
   lastUpdatedAt: number | null;
   autoRefresh: boolean;
 }) {
+  void autoRefresh;
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -35,13 +34,8 @@ export function StatusBar({
   }, []);
 
   return (
-    <footer className="flex flex-col gap-3 rounded-3xl border border-line bg-panel/90 px-5 py-4 text-sm text-slate-400 shadow-panel backdrop-blur md:flex-row md:items-center md:justify-between">
-      <div>Last updated: {formatSecondsAgo(lastUpdatedAt, now)}</div>
-      <div className="flex items-center gap-2">
-        <PulsingDot active={autoRefresh} colorClass="bg-emerald-400" />
-        Auto-refresh: {autoRefresh ? "ON" : "OFF"}
-      </div>
-      <div>Data refreshes every 5 seconds</div>
+    <footer className="flex h-6 items-center justify-end border-t border-line px-3 text-[11px] text-slate-500/90">
+      <div>Last updated {formatSecondsAgo(lastUpdatedAt, now)}</div>
     </footer>
   );
 }

@@ -10,17 +10,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#08101b",
-        panel: "#0f1726",
-        panelSoft: "#162033",
-        line: "#243148",
-        official: "#4c8dff",
-        corroborated: "#ef4444",
-        plausible: "#f59e0b",
-        unverified: "#94a3b8",
+        ink: "#0a0f1a",
+        panel: "#111827",
+        panelSoft: "#1a2332",
+        line: "#1e293b",
+        lineSubtle: "#162032",
+        official: "#3B82F6",
+        corroborated: "#F97316",
+        plausible: "#EAB308",
+        unverified: "#64748B",
+        success: "#22C55E",
+        danger: "#EF4444",
       },
       boxShadow: {
-        panel: "0 18px 40px rgba(0, 0, 0, 0.28)",
+        panel: "none",
       },
       animation: {
         pulseMarker: "pulse 2s ease-in-out infinite",

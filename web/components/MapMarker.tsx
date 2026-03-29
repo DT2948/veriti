@@ -99,16 +99,16 @@ export function MapMarker({
       }}
     >
       <Popup>
-        <div className="w-56 space-y-3">
-          <div className="space-y-2">
-            <p className="text-base font-semibold text-slate-100">
+        <div className="w-52 space-y-2">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-100">
               {(mapIncident.emoji ?? "❓") + " " + mapIncident.title}
             </p>
             <ConfidenceBadge tier={mapIncident.confidence_tier} />
           </div>
-          <div className="space-y-1 text-sm text-slate-300">
+          <div className="space-y-1 text-xs text-slate-400">
             <p>{mapIncident.number_of_reports} reports</p>
-            <p>{summaryPreview}</p>
+            <p className="text-slate-500">{summaryPreview}</p>
           </div>
         </div>
       </Popup>

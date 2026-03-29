@@ -53,27 +53,27 @@ export function OfficialSourcePanel({
   }
 
   return (
-    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-xl rounded-3xl border border-line bg-[#0f1726] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
-        <div className="flex items-center justify-between border-b border-[#243148] px-5 py-4">
+    <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-slate-950/80 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-xl rounded-md border border-line bg-panel">
+        <div className="flex items-center justify-between border-b border-line px-4 py-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-100">Official Source Intake</h2>
-            <p className="mt-1 text-sm text-slate-400">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-100">Official Source Intake</h2>
+            <p className="mt-1 text-xs text-slate-500">
               Paste a government statement or official tweet to parse and publish.
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full border border-[#243148] bg-[#111c2d] px-3 py-2 text-sm text-slate-300 transition hover:border-[#4c8dff]/40 hover:text-slate-100"
+            className="rounded-sm border border-line bg-transparent px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
           >
             Close
           </button>
         </div>
 
-        <form className="space-y-4 px-5 py-5" onSubmit={handleSubmit}>
+        <form className="space-y-3 px-4 py-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.14em] text-slate-500">
+            <label className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
               Official Statement
             </label>
             <textarea
@@ -81,13 +81,13 @@ export function OfficialSourcePanel({
               value={text}
               onChange={(event) => setText(event.target.value)}
               placeholder="Paste official tweet or statement..."
-              className="w-full rounded-2xl border border-[#243148] bg-[#111c2d] px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-[#4c8dff]/60"
+              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-official/60"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs uppercase tracking-[0.14em] text-slate-500">
+            <label className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
               Source URL
             </label>
             <input
@@ -95,37 +95,37 @@ export function OfficialSourcePanel({
               value={sourceUrl}
               onChange={(event) => setSourceUrl(event.target.value)}
               placeholder="Source URL (optional)"
-              className="w-full rounded-2xl border border-[#243148] bg-[#111c2d] px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-[#4c8dff]/60"
+              className="w-full rounded-sm border border-line bg-panelSoft px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-official/60"
             />
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-corroborated/40 bg-corroborated/10 px-4 py-3 text-sm text-corroborated">
+            <div className="rounded-sm border border-danger/40 bg-danger/10 px-3 py-2 text-sm text-danger">
               {error}
             </div>
           ) : null}
 
           {successLabel ? (
-            <div className="rounded-2xl border border-official/40 bg-official/10 px-4 py-3 text-sm text-official">
+            <div className="rounded-sm border border-official/40 bg-official/10 px-3 py-2 text-sm text-official">
               Published {successLabel}
             </div>
           ) : null}
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full border border-[#243148] bg-[#111c2d] px-4 py-2 text-sm text-slate-300 transition hover:border-[#4c8dff]/40 hover:text-slate-100"
+              className="rounded-sm border border-line bg-transparent px-3 py-1.5 text-xs text-slate-300 transition hover:border-official/40 hover:text-slate-100"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !text.trim()}
-              className="inline-flex items-center gap-2 rounded-full border border-[#4c8dff]/40 bg-[#4c8dff]/15 px-4 py-2 text-sm font-medium text-[#9fc0ff] transition hover:bg-[#4c8dff]/20 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-sm border border-official/40 bg-official/10 px-3 py-1.5 text-xs font-medium text-slate-100 transition hover:bg-official/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? (
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#9fc0ff] animate-pulse" />
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-official animate-pulse" />
               ) : (
                 <span>📡</span>
               )}
