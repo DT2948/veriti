@@ -20,11 +20,19 @@ function markerStyle(tier: MapIncident["confidence_tier"]) {
   }
 }
 
+function parseUtcTimestamp(timestamp: string): Date {
+  return new Date(timestamp.endsWith("Z") ? timestamp : `${timestamp}Z`);
+}
+
 function isRecent(timestamp?: string): boolean {
   if (!timestamp) {
     return false;
   }
-  return Date.now() - new Date(timestamp).getTime() <= 2 * 60_000;
+  const parsed = parseUtcTimestamp(timestamp);
+  if (Number.isNaN(parsed.getTime())) {
+    return false;
+  }
+  return Date.now() - parsed.getTime() <= 2 * 60_000;
 }
 
 export function MapMarker({
@@ -59,6 +67,11 @@ export function MapMarker({
         markerRef.current = instance;
       }}
       center={[mapIncident.latitude, mapIncident.longitude]}
+      eventHandlers={{
+        click: () => {
+          onViewDetails(mapIncident.id);
+        },
+      }}
       radius={radius}
       pathOptions={{
         color,
@@ -80,13 +93,6 @@ export function MapMarker({
             <p>{mapIncident.number_of_reports} reports</p>
             <p>{summaryPreview}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => onViewDetails(mapIncident.id)}
-            className="inline-flex rounded-full border border-official/30 bg-official/10 px-3 py-1.5 text-sm text-official"
-          >
-            View Details
-          </button>
         </div>
       </Popup>
     </CircleMarker>

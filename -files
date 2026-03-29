@@ -1,7 +1,0 @@
-[33m06e50c8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Adds gitignore
-[33m2b55afb[m I was trying to push from the wrong subdirectory, updated push now
-[33m8c59b3b[m For some reason mobile application code was not pushed but this is the code with submission limiting implemented and updated UI to clear fields after a submission
-[33m4d2f842[m Builds mobile app
-[33m2d41b71[m Initial commit with FastAPI scaffolding
-[33m7d300ec[m First commit with FastAPI Scaffolding
-[33m8ee2e8b[m Initial commit

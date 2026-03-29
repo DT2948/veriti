@@ -7,10 +7,17 @@ from config import get_settings
 from models.incident import Incident
 from models.submission import Submission
 from services.gemini_service import extract_incident_type
+from utils.dubai_locations import get_neighborhood_name
 from utils.hashing import hamming_distance
 
 
 settings = get_settings()
+
+
+def build_incident_title(incident_type: str, grid_cell: str, latitude: float, longitude: float) -> str:
+    neighborhood_name = get_neighborhood_name(grid_cell, latitude, longitude)
+    readable_type = incident_type.replace("_", " ").title()
+    return f"{readable_type} reported near {neighborhood_name}"
 
 
 def find_nearby_incidents(
@@ -96,7 +103,12 @@ def _create_incident_for_submission(db: Session, submission: Submission) -> Inci
     incident_type = extract_incident_type(submission.text_note or "")
     incident = Incident(
         type=incident_type,
-        title=f"{incident_type.replace('_', ' ').title()} near {submission.grid_cell}",
+        title=build_incident_title(
+            incident_type,
+            submission.grid_cell,
+            submission.latitude,
+            submission.longitude,
+        ),
         summary=None,
         source_type=submission.source_type,
         confidence_tier="official" if submission.source_type == "official" else "unverified",

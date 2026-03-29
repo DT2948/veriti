@@ -31,17 +31,31 @@ function sourceLabel(sourceType: string): string {
   return "👥 Public";
 }
 
+function parseUtcTimestamp(timestamp: string): Date {
+  return new Date(timestamp.endsWith("Z") ? timestamp : `${timestamp}Z`);
+}
+
 function formatRelativeTime(timestamp: string): string {
-  const diffMs = Date.now() - new Date(timestamp).getTime();
-  const minutes = Math.max(0, Math.floor(diffMs / 60_000));
-  if (minutes < 1) {
-    return "just now";
+  const date = parseUtcTimestamp(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return "unknown time";
   }
-  if (minutes < 60) {
-    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const diffMs = Date.now() - date.getTime();
+  const diffSeconds = Math.max(0, Math.floor(diffMs / 1000));
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffSeconds < 60) {
+    return `${diffSeconds} second${diffSeconds !== 1 ? "s" : ""} ago`;
   }
-  const hours = Math.floor(minutes / 60);
-  return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  if (diffMinutes < 60) {
+    return `${diffMinutes} minute${diffMinutes !== 1 ? "s" : ""} ago`;
+  }
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  }
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
 }
 
 export function IncidentCard({
@@ -57,6 +71,7 @@ export function IncidentCard({
 }) {
   return (
     <button
+      id={`incident-${incident.id}`}
       type="button"
       onClick={onClick}
       className={`w-full rounded-3xl border bg-panel px-4 py-4 text-left shadow-panel transition hover:border-slate-500/45 hover:bg-panelSoft ${

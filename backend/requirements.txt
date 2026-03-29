@@ -6,6 +6,6 @@ python-multipart
 pillow
 imagehash
 numpy
-google-generativeai
+google-genai
 python-dotenv
 aiofiles

@@ -4,7 +4,9 @@ from sqlalchemy import select
 
 from database import SessionLocal
 from models.submission import Submission
+from services.clustering_service import build_incident_title
 from services.gemini_service import (
+    extract_incident_type,
     generate_confidence_explanation,
     generate_incident_summary,
 )
@@ -29,6 +31,21 @@ def run_verification_pipeline(db, submission_id: str) -> None:
             linked_submissions = session.scalars(
                 select(Submission).where(Submission.incident_id == incident.id)
             ).all()
+            if incident.type == "unknown":
+                candidate_text = " ".join(
+                    filter(None, [linked_submission.text_note for linked_submission in linked_submissions])
+                )
+                extracted_type = extract_incident_type(candidate_text)
+                if extracted_type != "unknown":
+                    incident.type = extracted_type
+                    incident.tags = f'["{extracted_type}"]'
+
+            incident.title = build_incident_title(
+                incident.type,
+                incident.grid_cell,
+                incident.latitude,
+                incident.longitude,
+            )
             incident.summary = generate_incident_summary(incident, linked_submissions)
             incident.verification_notes = generate_confidence_explanation(incident, linked_submissions)
             incident.timestamp_last_updated = datetime.now(timezone.utc)

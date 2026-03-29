@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import L from "leaflet";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 
 import { MapMarker } from "@/components/MapMarker";
@@ -26,7 +27,17 @@ function MapController({
       return;
     }
 
-    map.flyTo([selectedIncident.latitude, selectedIncident.longitude], 12, {
+    const mapSize = map.getSize();
+    const targetLatLng = L.latLng(
+      selectedIncident.latitude,
+      selectedIncident.longitude,
+    );
+    const targetPoint = map.latLngToContainerPoint(targetLatLng);
+    const offsetX = mapSize.x * 0.18;
+    const offsetPoint = L.point(targetPoint.x - offsetX, targetPoint.y);
+    const offsetLatLng = map.containerPointToLatLng(offsetPoint);
+
+    map.flyTo([selectedIncident.latitude + 0.02, selectedIncident.longitude], 13, {
       duration: 1.1,
     });
   }, [map, selectedIncident?.id, selectedIncident?.latitude, selectedIncident?.longitude]);

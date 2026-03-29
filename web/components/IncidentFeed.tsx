@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { IncidentCard } from "@/components/IncidentCard";
 import type { Incident } from "@/types/incident";
 
@@ -14,6 +16,17 @@ export function IncidentFeed({
   onSelectIncident: (incident: Incident) => void;
   highlightedIds: Set<string>;
 }) {
+  useEffect(() => {
+    if (!selectedIncidentId) {
+      return;
+    }
+
+    const element = document.getElementById(`incident-${selectedIncidentId}`);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [selectedIncidentId]);
+
   return (
     <aside className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-line bg-panel/95 shadow-panel">
       <div className="shrink-0 border-b border-line px-5 py-4">
