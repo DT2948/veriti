@@ -62,6 +62,17 @@ export function MapMarker({
     }
   }, [selected]);
 
+  useEffect(() => {
+    const element = markerRef.current?.getElement();
+    if (!element) {
+      return;
+    }
+
+    // Leaflet does not reliably remove SVG path classes when pathOptions change,
+    // so toggle the pulse class directly as the "recent" window expires.
+    element.classList.toggle("veriti-marker-soft-pulse", recent);
+  }, [recent]);
+
   const summaryPreview = useMemo(() => {
     const summary = incident?.summary ?? "Awaiting analyst summary.";
     return summary.length > 100 ? `${summary.slice(0, 100)}...` : summary;
@@ -85,7 +96,6 @@ export function MapMarker({
         fillOpacity: selected ? 0.7 : 0.58,
         opacity: selected ? 0.84 : 0.74,
         stroke: false,
-        className: recent ? "veriti-marker-soft-pulse" : undefined,
       }}
     >
       <Popup>
