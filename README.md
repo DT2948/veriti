@@ -2,9 +2,6 @@
 
 > "We verify content, not identity."
 
-**Author:** Darsh Tejusinghani  
-**Event:** HackPSU Spring 2026
-
 Veriti is a privacy-first, real-time crisis signal verification platform built for Dubai. It was designed for the information gap that opens during fast-moving emergencies, when official channels are slow, social feeds fill with recycled footage and rumor, and ordinary residents are left trying to decide what is real. Veriti accepts anonymous public submissions and official alerts, cross-validates them with AI, and turns fragmented signals into confidence-scored incidents on a live map. The goal is not just to collect reports, but to help people on the ground build a calmer, more trustworthy picture of what is actually happening around them.
 
 **Devpost:** https://devpost.com/software/veriti
@@ -430,6 +427,10 @@ That lets the phone resolve `http://localhost:8000` to your local FastAPI server
 - imagehash
 - NumPy
 - OpenStreetMap contributors
+
+---
+
+_Veriti was awarded 1st Place Overall at HackPSU Spring 2026._
 
 
 
