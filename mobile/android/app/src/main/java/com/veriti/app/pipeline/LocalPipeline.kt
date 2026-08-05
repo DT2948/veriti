@@ -23,6 +23,7 @@ data class LocalProcessingResult(
 class LocalPipeline(
     context: Context,
     private val sessionHashes: MutableSet<String>,
+    private val benchmarkLocationProvider: (suspend () -> CoarsenedLocation)? = null,
 ) {
     private val appContext = context.applicationContext
     private val exifStripper = ExifStripper(appContext)
@@ -35,6 +36,7 @@ class LocalPipeline(
         uri: Uri,
         onState: (PipelineState) -> Unit,
     ): Result<LocalProcessingResult> {
+        var processingFile: File? = null
         return runCatching {
             onState(
                 PipelineState(
@@ -45,6 +47,7 @@ class LocalPipeline(
 
             val extension = inferExtension(uri)
             val initialCopy = exifStripper.copyToInternalStorage(uri, extension)
+            processingFile = initialCopy
             val mediaKind = if (extension in IMAGE_EXTENSIONS) "image" else "video"
             if (mediaKind == "image") {
                 exifStripper.stripExif(initialCopy)
@@ -66,7 +69,8 @@ class LocalPipeline(
                 )
             }
 
-            val location = locationCoarsener.getCoarsenedLocation()
+            val location = benchmarkLocationProvider?.invoke()
+                ?: locationCoarsener.getCoarsenedLocation()
             onState(
                 PipelineState(
                     metadata = PipelineStepState(StepStatus.Success, metadataMessage(mediaKind)),
@@ -127,6 +131,8 @@ class LocalPipeline(
                 deviceTrustScore = integrity.trustScore,
                 duplicateWarning = validation.duplicateWarning,
             )
+        }.onFailure {
+            processingFile?.delete()
         }
     }
 

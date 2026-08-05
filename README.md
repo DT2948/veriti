@@ -38,6 +38,7 @@ Veriti is a privacy-first, real-time crisis signal verification platform built f
 - [API Reference](#api-reference)
 - [Project Structure](#project-structure)
 - [Setup & Running](#setup--running)
+- [Performance Benchmarks](#performance-benchmarks)
 - [Demo Script](#demo-script)
 - [Acknowledgments](#acknowledgments)
 
@@ -408,6 +409,12 @@ adb reverse tcp:8000 tcp:8000
 ```
 
 That lets the phone resolve `http://localhost:8000` to your local FastAPI server.
+
+---
+
+## Performance Benchmarks
+
+Veriti includes deterministic media fixtures, Android privacy instrumentation, backend load and end-to-end runners, stubbed Gemini execution, bounded server metrics, and dashboard refresh timing. See [BENCHMARKS.md](BENCHMARKS.md) for exact commands and guidance on producing environment-labeled median, p95, throughput, concurrency, success, fallback, and error metrics.
 
 ---
 

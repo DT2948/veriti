@@ -15,10 +15,18 @@ mobile/android/app/build/
 mobile/android/.idea/
 mobile/android/local.properties
 *.apk
+mobile/android/app/src/androidTest/assets/privacy/
 
 # Node (for later)
 web/node_modules/
 web/.next/
+
+# Generated performance fixtures and results
+benchmark_fixtures/privacy*/
+benchmark_results/
+backend/benchmark_results/
+benchmark_uploads/
+benchmark.db
 
 # IDE
 .idea/

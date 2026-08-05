@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
 class Settings(BaseModel):
     app_name: str = "Veriti API"
     app_description: str = "Privacy-first crisis signal verification"
@@ -35,6 +39,19 @@ class Settings(BaseModel):
     duplicate_hash_threshold: int = Field(
         default_factory=lambda: int(os.getenv("DUPLICATE_HASH_THRESHOLD", "5"))
     )
+    benchmark_mode: bool = Field(default_factory=lambda: _env_bool("VERITI_BENCHMARK_MODE"))
+    performance_metrics_enabled: bool = Field(
+        default_factory=lambda: _env_bool("VERITI_PERFORMANCE_METRICS")
+    )
+    requested_gemini_mode: str = Field(
+        default_factory=lambda: os.getenv("VERITI_GEMINI_MODE", "live").strip().lower()
+    )
+
+    @property
+    def gemini_mode(self) -> str:
+        if self.benchmark_mode and self.requested_gemini_mode in {"stubbed", "disabled"}:
+            return self.requested_gemini_mode
+        return "live"
 
 
 @lru_cache(maxsize=1)

@@ -49,7 +49,7 @@ def delete_raw_media(file_path: str, upload_dir: str = "uploads") -> None:
 
     target_path = Path(file_path)
     if not target_path.exists():
-        logger.info("Raw media already absent, skipping delete: %s", file_path)
+        logger.info("Raw media already absent; skipping delete.")
         return
 
     resolved_upload_dir = Path(upload_dir).resolve()
@@ -63,7 +63,7 @@ def delete_raw_media(file_path: str, upload_dir: str = "uploads") -> None:
         ) from exc
 
     os.remove(resolved_target)
-    logger.info("Deleted raw media: %s", resolved_target)
+    logger.info("Deleted raw media after processing.")
 
 
 def scrub_video_metadata(file_path: str) -> None:
@@ -108,16 +108,15 @@ def scrub_video_metadata(file_path: str) -> None:
             text=True,
         )
         os.replace(temp_output_path, source_path)
-        logger.info("Scrubbed video metadata: %s", source_path)
+        logger.info("Scrubbed video metadata.")
     except Exception:
-        logger.warning("Failed to scrub video metadata for %s", source_path, exc_info=True)
+        logger.warning("Failed to scrub video metadata.", exc_info=True)
         if temp_output_path:
             try:
                 Path(temp_output_path).unlink(missing_ok=True)
             except OSError:
                 logger.warning(
-                    "Failed to clean temporary scrubbed video file for %s",
-                    source_path,
+                    "Failed to clean temporary scrubbed video file.",
                     exc_info=True,
                 )
 

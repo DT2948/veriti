@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchIncidents, fetchMapIncidents } from "@/lib/api";
+import {
+  beginPerformanceEvent,
+  finishPerformanceEvent,
+  recordPerformanceDuration,
+} from "@/lib/performance";
 import type { Incident, MapIncident } from "@/types/incident";
 
 interface UseIncidentsResult {
@@ -55,8 +60,15 @@ export function useIncidents(): UseIncidentsResult {
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
 
   const incidentsRef = useRef<Incident[]>([]);
+  const refreshInFlightRef = useRef(false);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+    refreshInFlightRef.current = true;
+    const refreshStarted = beginPerformanceEvent();
+    let refreshOutcome: "success" | "error" = "success";
     try {
       setError(null);
       setRefreshing(true);
@@ -74,6 +86,17 @@ export function useIncidents(): UseIncidentsResult {
 
       const changed = buildChangeSet(incidentsRef.current, sorted);
       incidentsRef.current = sorted;
+      if (changed.size > 0) {
+        const propagationSamples = sorted
+          .filter((incident) => changed.has(incident.id))
+          .map((incident) =>
+            Math.max(0, Date.now() - new Date(incident.timestamp_last_updated).getTime()),
+          );
+        recordPerformanceDuration(
+          "dashboard.propagation",
+          Math.max(...propagationSamples),
+        );
+      }
 
       setIncidents(sorted);
       setMapIncidents(mapResponse);
@@ -87,6 +110,7 @@ export function useIncidents(): UseIncidentsResult {
         }, 2200);
       }
     } catch (caught) {
+      refreshOutcome = "error";
       setError(
         caught instanceof Error
           ? caught.message
@@ -95,6 +119,8 @@ export function useIncidents(): UseIncidentsResult {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      refreshInFlightRef.current = false;
+      finishPerformanceEvent("dashboard.refresh", refreshStarted, refreshOutcome);
     }
   }, []);
 

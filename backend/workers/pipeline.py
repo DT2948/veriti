@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
 import logging
 from pathlib import Path
+import time
+import traceback
 
 from sqlalchemy import select
 
+from benchmarking.metrics import classify_exception, correlations, registry
 from database import SessionLocal
 from config import get_settings
 from models.submission import Submission
@@ -107,13 +110,18 @@ def _resolve_media_location_override(
 
 
 def run_verification_pipeline(db, submission_id: str) -> None:
+    total_started = time.perf_counter()
+    total_outcome = "success"
+    fallback_used = False
     own_session = db is None
     session = db or SessionLocal()
     media_path_to_delete: str | None = None
     corrected_location: tuple[float, float, str] | None = None
     try:
+        correlations.started(submission_id)
         submission = session.get(Submission, submission_id)
         if not submission:
+            total_outcome = "not_found"
             return
 
         media_path_to_delete = submission.media_path
@@ -125,6 +133,7 @@ def run_verification_pipeline(db, submission_id: str) -> None:
 
         media_analysis = None
         preferred_type = "unknown"
+        gemini_started = time.perf_counter()
         if submission.media_path and submission.media_type == "image":
             neighborhood = get_neighborhood_name(
                 submission.grid_cell,
@@ -167,19 +176,22 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 preferred_type,
                 media_analysis.get("trust_modifier", 0.0),
             )
+        if media_analysis is not None:
+            fallback_used = is_fallback_media_analysis(media_analysis)
+            if settings.performance_metrics_enabled or settings.benchmark_mode:
+                registry.record(
+                    "verification.gemini",
+                    (time.perf_counter() - gemini_started) * 1000,
+                    "fallback" if fallback_used else "success",
+                    {"media_type": submission.media_type or "none", "mode": settings.gemini_mode},
+                )
 
         corrected_location = _resolve_media_location_override(submission, media_analysis)
         if corrected_location is not None:
             corrected_lat, corrected_lng, corrected_grid_cell = corrected_location
             logger.info(
-                "Submission %s location corrected from (%s, %s, %s) to (%s, %s, %s) based on media-caption inference.",
+                "Submission %s location corrected based on media-caption inference.",
                 submission.id,
-                submission.latitude,
-                submission.longitude,
-                submission.grid_cell,
-                corrected_lat,
-                corrected_lng,
-                corrected_grid_cell,
             )
             submission.latitude = corrected_lat
             submission.longitude = corrected_lng
@@ -188,7 +200,13 @@ def run_verification_pipeline(db, submission_id: str) -> None:
             session.commit()
             session.refresh(submission)
 
+        cluster_started = time.perf_counter()
         submission, incident = process_submission(session, submission_id)
+        if settings.performance_metrics_enabled or settings.benchmark_mode:
+            registry.record(
+                "verification.cluster_score",
+                (time.perf_counter() - cluster_started) * 1000,
+            )
         if incident is not None:
             if corrected_location is not None:
                 corrected_lat, corrected_lng, corrected_grid_cell = corrected_location
@@ -233,6 +251,7 @@ def run_verification_pipeline(db, submission_id: str) -> None:
                 incident.latitude,
                 incident.longitude,
             )
+            summary_started = time.perf_counter()
             incident.summary = generate_incident_summary(
                 incident,
                 linked_submissions,
@@ -244,6 +263,14 @@ def run_verification_pipeline(db, submission_id: str) -> None:
             )
             summary_source = getattr(incident, "_summary_generation_source", "unknown")
             confidence_source = getattr(incident, "_confidence_explanation_source", "unknown")
+            fallback_used = fallback_used or summary_source == "fallback" or confidence_source == "fallback"
+            if settings.performance_metrics_enabled or settings.benchmark_mode:
+                registry.record(
+                    "verification.summary",
+                    (time.perf_counter() - summary_started) * 1000,
+                    "fallback" if summary_source == "fallback" or confidence_source == "fallback" else "success",
+                    {"mode": settings.gemini_mode},
+                )
             logger.info(
                 "Incident %s summary_source=%s confidence_explanation_source=%s final_type=%s final_tier=%s final_score=%.3f",
                 incident.id,
@@ -260,7 +287,17 @@ def run_verification_pipeline(db, submission_id: str) -> None:
         submission.verification_status = "verified" if incident else "rejected"
         session.add(submission)
         session.commit()
-    except Exception:
+        correlations.completed(submission_id, fallback_used)
+    except Exception as exc:
+        total_outcome = classify_exception(exc)
+        logger.error(
+            "performance operation=verification.total correlation_id=%s exception_class=%s "
+            "failure_category=%s stack=%s",
+            submission_id,
+            type(exc).__name__,
+            total_outcome,
+            "".join(traceback.format_tb(exc.__traceback__)).strip(),
+        )
         submission = session.get(Submission, submission_id)
         if submission:
             media_path_to_delete = submission.media_path
@@ -268,17 +305,31 @@ def run_verification_pipeline(db, submission_id: str) -> None:
             submission.processed_at = datetime.now(timezone.utc)
             session.add(submission)
             session.commit()
+        correlations.completed(submission_id, fallback_used=True)
     finally:
         if media_path_to_delete:
+            cleanup_started = time.perf_counter()
             try:
                 if Path(media_path_to_delete).exists():
                     delete_raw_media(media_path_to_delete, settings.upload_dir)
             except Exception:
                 logger.warning(
-                    "Failed to delete raw media for submission %s: %s",
+                    "Failed to delete raw media for submission %s.",
                     submission_id,
-                    media_path_to_delete,
                     exc_info=True,
                 )
+            finally:
+                if settings.performance_metrics_enabled or settings.benchmark_mode:
+                    registry.record(
+                        "verification.cleanup",
+                        (time.perf_counter() - cleanup_started) * 1000,
+                    )
         if own_session:
             session.close()
+        if settings.performance_metrics_enabled or settings.benchmark_mode:
+            registry.record(
+                "verification.total",
+                (time.perf_counter() - total_started) * 1000,
+                total_outcome,
+                {"mode": settings.gemini_mode},
+            )

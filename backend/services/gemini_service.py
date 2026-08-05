@@ -5,6 +5,7 @@ import logging
 import re
 import subprocess
 import tempfile
+import time
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -15,6 +16,7 @@ from google.genai import types
 from PIL import Image
 
 from config import get_settings
+from benchmarking.metrics import classify_exception, registry
 from utils.dubai_locations import get_neighborhood_name
 from utils.incident_types import ALLOWED_TYPES, DEFAULT_TYPE
 
@@ -54,6 +56,8 @@ GENERIC_STRIKE_KEYWORDS = {
 
 def _get_client() -> genai.Client | None:
     global _client
+    if settings.gemini_mode != "live":
+        return None
     if not settings.gemini_api_key:
         return None
     if _client is None:
@@ -75,34 +79,93 @@ def _normalize_incident_type(value: str | None) -> str:
     return normalized if normalized in ALLOWED_TYPES else DEFAULT_TYPE
 
 
-def _generate_text(prompt: str) -> str:
-    client = _get_client()
-    if client is None:
-        raise RuntimeError("Gemini API key is not configured.")
+def _stubbed_text(operation: str) -> str:
+    stubs = {
+        "gemini.media_evidence": json.dumps({
+            "observations": ["synthetic benchmark scene"],
+            "environment": ["outdoor urban area"],
+            "hazards": [],
+            "visual_cues": [],
+            "smoke_visible": False,
+            "fire_visible": False,
+            "damage_visible": False,
+            "airport_interior_visible": False,
+            "people_visible": False,
+            "uncertainties": ["generated fixture"],
+        }),
+        "gemini.media_synthesis": json.dumps({
+            "media_description": "Synthetic benchmark media.",
+            "detected_incident_type": "unknown",
+            "severity_estimate": "unclear",
+            "visible_landmarks": [],
+            "inferred_location": "",
+            "plausibility": "unclear",
+            "cross_validation": {
+                "caption_media_match": "neutral",
+                "location_media_match": "neutral",
+                "caption_location_match": "neutral",
+                "overall_consistency": "partial",
+                "explanation": "Deterministic benchmark response.",
+            },
+            "trust_modifier": 0.0,
+            "inferred_data": {"suggested_type": "unknown", "suggested_location": ""},
+        }),
+        "gemini.incident_type": "unknown",
+        "gemini.summary": "A synthetic benchmark incident was reported and remains unverified.",
+        "gemini.confidence": "The incident remains unverified while additional reports are collected.",
+        "gemini.audio_briefing": "Veriti situation briefing. This is a benchmark response. Stay safe.",
+        "gemini.official_source": json.dumps({
+            "incident_type": "unknown",
+            "title": "Synthetic official benchmark alert",
+            "summary": "Synthetic benchmark source.",
+            "latitude": 25.2048,
+            "longitude": 55.2708,
+            "location_name": "Dubai",
+            "severity": "unclear",
+        }),
+    }
+    return stubs[operation]
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-    )
-    text = getattr(response, "text", "") or ""
-    if not text.strip():
-        raise RuntimeError("Gemini returned an empty response.")
-    return text.strip()
+
+def _generate_content(contents, model: str, operation: str) -> str:
+    started = time.perf_counter()
+    outcome = "success"
+    try:
+        if settings.gemini_mode == "stubbed":
+            return _stubbed_text(operation)
+        if settings.gemini_mode == "disabled":
+            raise RuntimeError("Gemini is disabled for this benchmark.")
+        client = _get_client()
+        if client is None:
+            raise RuntimeError("Gemini API key is not configured.")
+        response = client.models.generate_content(model=model, contents=contents)
+        text = getattr(response, "text", "") or ""
+        if not text.strip():
+            raise RuntimeError("Gemini returned an empty response.")
+        return text.strip()
+    except Exception as exc:
+        outcome = (
+            "fallback"
+            if settings.gemini_mode == "disabled"
+            else classify_exception(exc)
+        )
+        raise
+    finally:
+        if settings.performance_metrics_enabled or settings.benchmark_mode:
+            registry.record(
+                operation,
+                (time.perf_counter() - started) * 1000,
+                outcome,
+                {"mode": settings.gemini_mode},
+            )
 
 
-def _generate_text_with_model(prompt: str, model: str) -> str:
-    client = _get_client()
-    if client is None:
-        raise RuntimeError("Gemini API key is not configured.")
+def _generate_text(prompt: str, operation: str) -> str:
+    return _generate_content(prompt, GEMINI_MODEL, operation)
 
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-    )
-    text = getattr(response, "text", "") or ""
-    if not text.strip():
-        raise RuntimeError("Gemini returned an empty response.")
-    return text.strip()
+
+def _generate_text_with_model(prompt: str, model: str, operation: str) -> str:
+    return _generate_content(prompt, model, operation)
 
 
 def _clean_json_text(text: str) -> str:
@@ -379,10 +442,6 @@ def _extract_media_evidence(
     media_parts: list[types.Part],
     media_descriptor: str,
 ) -> dict:
-    client = _get_client()
-    if client is None:
-        raise RuntimeError("Gemini API key is not configured.")
-
     prompt = f"""
 You are a visual evidence parser for a civilian safety platform in Dubai.
 Your only job is to describe what is concretely visible in the submitted media.
@@ -412,13 +471,11 @@ Return valid JSON in exactly this shape:
 }}
 """.strip()
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[prompt, *media_parts],
+    text = _generate_content(
+        [prompt, *media_parts],
+        GEMINI_MODEL,
+        "gemini.media_evidence",
     )
-    text = getattr(response, "text", "") or ""
-    if not text.strip():
-        raise RuntimeError("Gemini returned empty media evidence output.")
     payload = _load_json_object(text)
     return _normalize_media_evidence_payload(payload)
 
@@ -460,10 +517,6 @@ def _synthesize_media_analysis(
     claimed_lng: float | None,
     neighborhood_name: str | None,
 ) -> dict:
-    client = _get_client()
-    if client is None:
-        raise RuntimeError("Gemini API key is not configured.")
-
     media_description = _compose_media_description_from_evidence(evidence)
     prompt = f"""
 You are a crisis verification analyst for a civilian safety platform in Dubai.
@@ -518,13 +571,7 @@ Respond in this exact JSON format:
 """ % "|".join(sorted(ALLOWED_TYPES))
     prompt = prompt.strip()
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-    )
-    text = getattr(response, "text", "") or ""
-    if not text.strip():
-        raise RuntimeError("Gemini returned empty synthesis output.")
+    text = _generate_content(prompt, GEMINI_MODEL, "gemini.media_synthesis")
     payload = _load_json_object(text)
     normalized = _normalize_analysis_payload(payload)
     normalized["media_description"] = normalized.get("media_description") or media_description
@@ -656,8 +703,7 @@ def _analyze_media_parts(
     claimed_lng: float = None,
     neighborhood_name: str = None,
 ) -> dict:
-    client = _get_client()
-    if client is None:
+    if settings.gemini_mode == "live" and _get_client() is None:
         return _fallback_analysis()
 
     try:
@@ -727,7 +773,7 @@ Write a calm, factual summary suitable for concerned residents.
         incident._media_analysis_context = media_analysis
         incident._summary_generation_source = "gemini"
         incident._summary_generation_error = ""
-        return _generate_text(prompt)
+        return _generate_text(prompt, "gemini.summary")
     except Exception as exc:
         logger.error("Gemini incident summary generation failed: %s", exc, exc_info=True)
         incident._media_analysis_context = media_analysis
@@ -747,7 +793,7 @@ and be specific about what would increase or decrease confidence.
     try:
         incident._confidence_explanation_source = "gemini"
         incident._confidence_explanation_error = ""
-        return _generate_text(prompt)
+        return _generate_text(prompt, "gemini.confidence")
     except Exception as exc:
         logger.error("Gemini confidence explanation failed: %s", exc, exc_info=True)
         incident._confidence_explanation_source = "fallback"
@@ -799,7 +845,7 @@ Rules:
 - Keep it calm and factual. No dramatic language.
 """.strip()
     try:
-        return _generate_text(prompt)
+        return _generate_text(prompt, "gemini.audio_briefing")
     except Exception as exc:
         logger.error("Gemini audio briefing generation failed: %s", exc, exc_info=True)
         return (
@@ -834,7 +880,7 @@ Text note: {text_note or "none"}
 Media description: {media_description or "none"}
 """.strip()
     try:
-        result = _generate_text(prompt).strip().lower()
+        result = _generate_text(prompt, "gemini.incident_type").strip().lower()
         return _rebalance_strike_type(
             _normalize_incident_type(result),
             text_note=text_note,
@@ -900,7 +946,7 @@ within Dubai. If no location can be determined at all, use Dubai center:
 Return ONLY the JSON object, no other text.
 """.strip()
 
-    text_response = _generate_text_with_model(prompt, GEMINI_MODEL)
+    text_response = _generate_text_with_model(prompt, GEMINI_MODEL, "gemini.official_source")
     payload = _load_json_object(text_response)
 
     latitude = payload.get("latitude")

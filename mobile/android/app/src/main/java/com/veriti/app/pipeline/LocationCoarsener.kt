@@ -29,8 +29,12 @@ class LocationCoarsener(private val context: Context) {
             .await()
             ?: throw IllegalStateException("Could not obtain approximate location.")
 
-        val coarsenedLat = round(location.latitude / 0.0045) * 0.0045
-        val coarsenedLng = round(location.longitude / 0.0045) * 0.0045
+        return coarsen(location.latitude, location.longitude)
+    }
+
+    fun coarsen(latitude: Double, longitude: Double): CoarsenedLocation {
+        val coarsenedLat = round(latitude / 0.0045) * 0.0045
+        val coarsenedLng = round(longitude / 0.0045) * 0.0045
         return CoarsenedLocation(
             latitude = coarsenedLat,
             longitude = coarsenedLng,
